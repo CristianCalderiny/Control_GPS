@@ -1,59 +1,83 @@
 <?php
 session_start();
-require 'conexion/db.php'; // tu archivo de conexión
+require 'conexion/db.php';
 
-// Si ya está logueado, redirige al index
-if (isset($_SESSION['usuario_id'])) {
-    header("Location: index.php");
+// Verificar que sea una petición POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header("Location: login.php");
     exit;
 }
 
-$error = '';
-$success = '';
+$username = trim($_POST['username'] ?? '');
+$password = $_POST['password'] ?? '';
+$remember = isset($_POST['remember']);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = trim($_POST['username'] ?? '');
-    $password = $_POST['password'] ?? '';
+// Validar campos vacíos
+if (empty($username) || empty($password)) {
+    header("Location: login.php?error=" . urlencode("Por favor complete todos los campos"));
+    exit;
+}
 
-    // Validación del lado del servidor
-    if (empty($username)) {
-        $error = "El usuario o correo es obligatorio.";
-    } elseif (empty($password)) {
-        $error = "La contraseña es obligatoria.";
-    } elseif (strlen($password) < 6) {
-        $error = "La contraseña debe tener al menos 6 caracteres.";
-    } else {
-        // Buscar usuario en la base de datos
-        $sql = "SELECT id, usuario, email, password, rol FROM usuarios WHERE usuario = :username OR email = :username LIMIT 1";
-        
-        try {
-            $stmt = $conn->prepare($sql);
-            $stmt->execute([':username' => $username]);
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+try {
+    // Buscar usuario por username o email
+    $sql = "SELECT id, usuario, email, password, rol, nombre_completo, estado 
+            FROM usuarios 
+            WHERE (usuario = :username OR email = :username) AND estado = 'activo'
+            LIMIT 1";
+    
+    $stmt = $conn->prepare($sql);
+    $stmt->execute([':username' => $username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($user && password_verify($password, $user['password'])) {
-                // Login exitoso
-                $_SESSION['usuario_id'] = $user['id'];
-                $_SESSION['usuario'] = $user['usuario'];
-                $_SESSION['email'] = $user['email'];
-                $_SESSION['rol'] = $user['rol'];
-                
-                // Registrar último acceso (opcional)
-                $updateSql = "UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = :id";
-                $updateStmt = $conn->prepare($updateSql);
-                $updateStmt->execute([':id' => $user['id']]);
-                
-                $success = "Login exitoso. Redirigiendo...";
-                header("Refresh: 1; url=index.php");
-                exit;
-            } else {
-                $error = "Usuario o contraseña incorrectos.";
-            }
-        } catch (PDOException $e) {
-            $error = "Error en la base de datos. Intente más tarde.";
-            // Log del error (no mostrar detalles al usuario)
-            error_log("Error de login: " . $e->getMessage());
-        }
+    // Verificar si el usuario existe
+    if (!$user) {
+        header("Location: login.php?error=" . urlencode("Usuario no encontrado o cuenta inactiva"));
+        exit;
     }
+
+    // Verificar contraseña
+    if (!password_verify($password, $user['password'])) {
+        header("Location: login.php?error=" . urlencode("Contraseña incorrecta"));
+        exit;
+    }
+
+    // Login exitoso - Crear sesión
+    $_SESSION['usuario_id'] = $user['id'];
+    $_SESSION['usuario'] = $user['usuario'];
+    $_SESSION['email'] = $user['email'];
+    $_SESSION['rol'] = $user['rol'];
+    $_SESSION['nombre'] = $user['nombre_completo'];
+    $_SESSION['autenticado'] = true;
+    $_SESSION['login_time'] = time();
+    
+    // Guardar en localStorage para JavaScript también
+    setcookie('usuario_logueado', json_encode([
+        'id' => $user['id'],
+        'usuario' => $user['usuario'],
+        'email' => $user['email'],
+        'rol' => $user['rol'],
+        'nombre' => $user['nombre_completo']
+    ]), time() + (86400 * 30), '/');
+    
+    // Actualizar último acceso
+    $updateSql = "UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = :id";
+    $updateStmt = $conn->prepare($updateSql);
+    $updateStmt->execute([':id' => $user['id']]);
+    
+    // Si marcó "Recordarme", crear cookie segura
+    if ($remember) {
+        $token = bin2hex(random_bytes(32));
+        setcookie('forza_remember', $token, time() + (86400 * 30), '/', '', true, true); // 30 días
+    }
+    
+    // Redirigir al dashboard
+    header("Location: index.php");
+    exit;
+    
+} catch (PDOException $e) {
+    // Log del error
+    error_log("Error de login: " . $e->getMessage());
+    header("Location: login.php?error=" . urlencode("Error del sistema. Intente nuevamente."));
+    exit;
 }
 ?>

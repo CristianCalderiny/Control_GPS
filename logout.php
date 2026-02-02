@@ -1,22 +1,18 @@
 <?php
 session_start();
 
-// Destruir todas las variables de sesión
-$_SESSION = array();
+// Limpiar variables de sesión
+$_SESSION = [];
 
-// Si se desea destruir la sesión completamente, también se debe borrar la cookie de sesión
-if (ini_get("session.use_cookies")) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000,
-        $params["path"], $params["domain"],
-        $params["secure"], $params["httponly"]
-    );
-}
-
-// Finalmente, destruir la sesión
+// Destruir la sesión
 session_destroy();
 
+// Limpiar cookies si existen
+if (isset($_COOKIE['forza_remember'])) {
+    setcookie('forza_remember', '', time() - 3600, '/', '', true, true);
+}
+
 // Redirigir al login
-header("Location: login.php");
+header("Location: login.php?success=" . urlencode("Sesión cerrada correctamente"));
 exit;
 ?>

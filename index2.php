@@ -17,11 +17,15 @@ $usuario_rol = $_SESSION['rol'] ?? 'Usuario';
 try {
     $statsSQL = "
         SELECT 
-            (SELECT COUNT(*) FROM gps_dispositivos WHERE estado = 'asignado') as gps_asignados,
-            (SELECT COUNT(*) FROM gps_dispositivos WHERE estado = 'disponible') as gps_disponibles,
-            (SELECT COUNT(*) FROM gps_dispositivos) as gps_total,
-            (SELECT COUNT(*) FROM custodios WHERE estado = 'activo') as custodios_activos,
-            (SELECT COUNT(*) FROM asignaciones_gps WHERE estado = 'asignado') as asignaciones_activas
+        (SELECT COUNT(*) FROM gps_dispositivos WHERE estado = 'asignado') as gps_asignados,
+        (SELECT COUNT(*) FROM gps_dispositivos WHERE estado = 'disponible') as gps_disponibles,
+        (SELECT COUNT(*) FROM gps_dispositivos) as gps_total,
+        (SELECT COUNT(*) FROM custodios WHERE estado = 'activo') as custodios_activos,
+        (SELECT COUNT(*) FROM asignaciones_gps WHERE estado = 'asignado') as asignaciones_activas,
+        (SELECT COUNT(*) FROM misiones WHERE estado = 'en_curso') as misiones_activas,
+        (SELECT COUNT(*) FROM misiones WHERE estado = 'completada') as misiones_completadas,
+        (SELECT COUNT(*) FROM misiones) as total_misiones
+            
     ";
 
     $stmt = $conn->prepare($statsSQL);
@@ -1411,6 +1415,164 @@ try {
             display: flex;
             gap: 0.5rem;
         }
+
+        /* ==================== ESTILOS PARA MÓDULO DE MISIONES ==================== */
+        .stat-icon.blue {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+
+        .stat-icon.teal {
+            background: linear-gradient(135deg, #06b6d4, #0891b2);
+        }
+
+        .stat-icon.indigo {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+
+        /* Estados de misión */
+        .estado-pendiente {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .estado-en_curso {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .estado-completada {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .estado-cancelada {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        body.dark-mode .estado-pendiente {
+            background: #92400e;
+            color: #fef3c7;
+        }
+
+        body.dark-mode .estado-en_curso {
+            background: #1e40af;
+            color: #dbeafe;
+        }
+
+        body.dark-mode .estado-completada {
+            background: #166534;
+            color: #dcfce7;
+        }
+
+        body.dark-mode .estado-cancelada {
+            background: #991b1b;
+            color: #fee2e2;
+        }
+
+        /* Prioridades de misión */
+        .priority-baja {
+            color: #10b981;
+        }
+
+        .priority-media {
+            color: #f59e0b;
+        }
+
+        .priority-alta {
+            color: #ef4444;
+        }
+
+        .priority-critica {
+            color: #dc2626;
+            font-weight: 700;
+        }
+
+        /* Rating Stars */
+        .rating-stars {
+            display: inline-flex;
+            gap: 0.25rem;
+        }
+
+        .rating-stars i {
+            color: #fbbf24;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--info));
+            transition: width 0.3s ease;
+        }
+
+        /* Performance Card para estadísticas de custodios */
+        .performance-card {
+            background: linear-gradient(135deg, var(--bg-card), var(--bg-secondary));
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+        }
+
+        .performance-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+
+        .performance-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .custodio-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .custodio-cargo {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .performance-stat {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border-radius: 10px;
+        }
+
+        .performance-stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .performance-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
     </style>
 </head>
 
@@ -1555,6 +1717,18 @@ try {
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>Alertas Recuperación</span>
             </button>
+            <button class="nav-item" onclick="showModule('misiones')">
+                <i class="fas fa-tasks"></i>
+                <span>📋 Misiones</span>
+            </button>
+            <button class="nav-item" onclick="showModule('nueva-mision')">
+                <i class="fas fa-plus-circle"></i>
+                <span>➕ Nueva Misión</span>
+            </button>
+            <button class="nav-item" onclick="showModule('estadisticas-misiones')">
+                <i class="fas fa-chart-bar"></i>
+                <span>📊 Estadísticas</span>
+            </button>
             <button class="nav-item" onclick="toggleSidebarCollapse()" title="Contraer/Expandir" style="margin-top: auto;">
                 <i class="fas fa-chevron-left" id="toggle-icon"></i>
                 <span>Contraer</span>
@@ -1565,7 +1739,7 @@ try {
     <button class="mobile-menu-btn" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
     </button>
-    
+
     <main class="main-content">
         <!-- DASHBOARD -->
         <div id="module-dashboard" class="module-content">
@@ -1602,6 +1776,36 @@ try {
                     <div class="stat-icon purple">
                         <i class="fas fa-list"></i>
                     </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Misiones Activas</h3>
+                    <p id="stat-misiones-activas"><?php echo $stats['misiones_activas'] ?? 0; ?></p>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="fas fa-running"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Misiones Completadas</h3>
+                    <p id="stat-misiones-completadas"><?php echo $stats['misiones_completadas'] ?? 0; ?></p>
+                </div>
+                <div class="stat-icon teal">
+                    <i class="fas fa-check-double"></i>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-info">
+                    <h3>Total Misiones</h3>
+                    <p id="stat-misiones-total"><?php echo $stats['total_misiones'] ?? 0; ?></p>
+                </div>
+                <div class="stat-icon indigo">
+                    <i class="fas fa-tasks"></i>
                 </div>
             </div>
 
