@@ -1,9 +1,9 @@
 <?php
 session_start();
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-// Verificar autenticación
 if (!isset($_SESSION['usuario_id'])) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'No autorizado']);
     exit;
 }
@@ -11,67 +11,71 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once '../conexion/db.php';
 
 try {
-    // Validar datos requeridos
-    if (empty($_POST['misionId']) || empty($_POST['estado'])) {
-        echo json_encode(['success' => false, 'message' => 'Datos incompletos']);
+    $mision_id = $_POST['mision_id'] ?? null;
+    $nuevo_estado = $_POST['nuevo_estado'] ?? null;
+    $observaciones = $_POST['observaciones'] ?? '';
+
+    if (!$mision_id || !$nuevo_estado) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Faltan parámetros requeridos']);
         exit;
     }
 
-    $misionId = $_POST['misionId'];
-    $nuevoEstado = $_POST['estado'];
-    $observaciones = $_POST['observaciones'] ?? null;
-    $usuarioId = $_SESSION['usuario_id'];
-
-    // Validar estado
-    $estadosValidos = ['pendiente', 'en_curso', 'completada', 'cancelada'];
-    if (!in_array($nuevoEstado, $estadosValidos)) {
+    // Estados válidos
+    $estados_validos = ['pendiente', 'posicionado', 'en_ruta', 'finalizada', 'completada', 'cancelada'];
+    if (!in_array($nuevo_estado, $estados_validos)) {
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Estado no válido']);
         exit;
     }
 
-    // Obtener estado actual
-    $stmtCheck = $conn->prepare("SELECT estado, gps_id FROM misiones WHERE id = ?");
-    $stmtCheck->execute([$misionId]);
+    // Verificar que la misión exista
+    $stmtCheck = $conn->prepare("SELECT id, estado FROM misiones WHERE id = ?");
+    $stmtCheck->execute([$mision_id]);
     $mision = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
     if (!$mision) {
+        http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Misión no encontrada']);
         exit;
     }
 
-    $estadoAnterior = $mision['estado'];
+    // Si el nuevo estado es 'finalizada' o 'completada', registrar fecha de fin
+    $fecha_fin = ($nuevo_estado === 'finalizada' || $nuevo_estado === 'completada') ? 'NOW()' : 'NULL';
 
-    // Actualizar estado
-    $sql = "UPDATE misiones SET estado = ?, updated_by = ? WHERE id = ?";
+    $sql = "UPDATE misiones SET 
+        estado = ?,
+        fecha_fin = " . ($nuevo_estado === 'finalizada' || $nuevo_estado === 'completada' ? 'NOW()' : 'fecha_fin') . ",
+        observaciones = CONCAT(COALESCE(observaciones, ''), '\n\n[Estado: " . $nuevo_estado . "] ', ?)
+    WHERE id = ?";
+
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$nuevoEstado, $usuarioId, $misionId]);
-
-    // Registrar en historial
-    $sqlHistorial = "INSERT INTO misiones_historial (mision_id, estado_anterior, estado_nuevo, observaciones, usuario_id)
-                     VALUES (?, ?, ?, ?, ?)";
-    $stmtHistorial = $conn->prepare($sqlHistorial);
-    $stmtHistorial->execute([$misionId, $estadoAnterior, $nuevoEstado, $observaciones, $usuarioId]);
-
-    // Si se inicia la misión y tiene GPS, marcarlo como asignado
-    if ($nuevoEstado === 'en_curso' && $mision['gps_id']) {
-        $stmtGps = $conn->prepare("UPDATE gps_dispositivos SET estado = 'asignado' WHERE id = ?");
-        $stmtGps->execute([$mision['gps_id']]);
-    }
-
-    // Si se completa o cancela y tiene GPS, liberarlo
-    if (($nuevoEstado === 'completada' || $nuevoEstado === 'cancelada') && $mision['gps_id']) {
-        $stmtGps = $conn->prepare("UPDATE gps_dispositivos SET estado = 'disponible' WHERE id = ?");
-        $stmtGps->execute([$mision['gps_id']]);
-    }
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Estado actualizado exitosamente',
-        'estadoAnterior' => $estadoAnterior,
-        'estadoNuevo' => $nuevoEstado
+    $resultado = $stmt->execute([
+        $nuevo_estado,
+        $observaciones,
+        $mision_id
     ]);
+
+    if ($resultado) {
+        http_response_code(200);
+        echo json_encode([
+            'success' => true,
+            'message' => 'Estado actualizado correctamente',
+            'mision_id' => $mision_id,
+            'nuevo_estado' => $nuevo_estado
+        ]);
+    } else {
+        http_response_code(500);
+        echo json_encode(['success' => false, 'message' => 'Error al actualizar estado']);
+    }
 
 } catch (PDOException $e) {
     error_log("Error en update_estado_mision.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error al actualizar estado: ' . $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error en la base de datos']);
+} catch (Exception $e) {
+    error_log("Error general en update_estado_mision.php: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
+?>

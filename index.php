@@ -1411,6 +1411,100 @@ try {
             display: flex;
             gap: 0.5rem;
         }
+
+        .btn-tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 3px solid transparent;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-tab:hover {
+            color: var(--primary);
+        }
+
+        .btn-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .badge-mision-corta {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+
+        .badge-mision-larga {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .mision-card {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .mision-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .mision-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .mision-card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .mision-card-icon {
+            font-size: 1.5rem;
+        }
+
+        .mision-card-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--bg-primary);
+            border-radius: 8px;
+        }
+
+        .mision-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mision-detail-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .mision-detail-value {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
     </style>
 </head>
 
@@ -1551,6 +1645,10 @@ try {
                 <i class="fas fa-clock"></i>
                 <span>Historial</span>
             </button>
+            <button class="nav-item" onclick="showModule('misiones')">
+                <i class="fas fa-tasks"></i>
+                <span>Gestión de Misiones</span>
+            </button>
             <button class="nav-item" onclick="showModule('alertas')">
                 <i class="fas fa-exclamation-triangle"></i>
                 <span>Alertas Recuperación</span>
@@ -1565,7 +1663,7 @@ try {
     <button class="mobile-menu-btn" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
     </button>
-    
+
     <main class="main-content">
         <!-- DASHBOARD -->
         <div id="module-dashboard" class="module-content">
@@ -1929,6 +2027,129 @@ try {
             </div>
         </div>
 
+
+        <!-- ==================== MÓDULO DE MISIONES ==================== -->
+        <div id="module-misiones" class="module-content hidden">
+            <div class="content-header">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2>Gestión de Misiones</h2>
+                        <p>Control de misiones largas y cortas de custodios</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showModalMision()">
+                        <i class="fas fa-plus"></i> Nueva Misión
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABS PARA FILTRAR -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;">
+                    <button class="btn-tab active" onclick="filtrarMisionesPorEstado('en_progreso')">
+                        <i class="fas fa-hourglass-start"></i> En Progreso
+                    </button>
+                    <button class="btn-tab" onclick="filtrarMisionesPorEstado('completada')">
+                        <i class="fas fa-check-circle"></i> Completadas
+                    </button>
+                    <button class="btn-tab" onclick="filtrarMisionesPorEstado('todas')">
+                        <i class="fas fa-list"></i> Todas
+                    </button>
+                </div>
+            </div>
+
+            <!-- ESTADÍSTICAS DE MISIONES -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Total Misiones</h3>
+                        <p id="stat-total-misiones">0</p>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Misiones Cortas</h3>
+                        <p id="stat-misiones-cortas">0</p>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Misiones Largas</h3>
+                        <p id="stat-misiones-largas">0</p>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-mountain"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>En Progreso</h3>
+                        <p id="stat-misiones-activas">0</p>
+                    </div>
+                    <div class="stat-icon red">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLA DE MISIONES -->
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-list"></i> Misiones Registradas
+                </h3>
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="buscar-misiones" placeholder="Buscar por custodio, descripción..." onkeyup="filtrarTablaMisiones()">
+                </div>
+                <div class="table-container">
+                    <table id="tabla-misiones">
+                        <thead>
+                            <tr>
+                                <th>Custodio</th>
+                                <th>Tipo de Misión</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Fecha Inicio</th>
+                                <th>Duración (Horas)</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ESTADÍSTICAS POR CUSTODIO -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
+                </h3>
+                <div class="table-container">
+                    <table id="tabla-estadisticas-custodios">
+                        <thead>
+                            <tr>
+                                <th>Custodio</th>
+                                <th>Total Misiones</th>
+                                <th>Misiones Cortas</th>
+                                <th>Misiones Largas</th>
+                                <th>Horas Totales</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- ALERTAS DE RECUPERACIÓN -->
         <div id="module-alertas" class="module-content hidden">
             <div class="content-header">
@@ -1980,6 +2201,174 @@ try {
         </div>
     </div>
 
+    <!-- ==================== MODAL PARA CREAR MISIÓN ==================== -->
+    <div class="modal" id="modal-mision">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-tasks"></i> Nueva Misión</h3>
+                <button class="close-modal" onclick="closeModal('modal-mision')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-mision" onsubmit="crearMision(event)">
+                    <!-- SECCIÓN 1: INFORMACIÓN BÁSICA -->
+                    <div style="background: linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(59, 130, 246, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid var(--primary);">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fas fa-clipboard"></i> Información Básica
+                        </h4>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-user"></i> Custodio Responsable <span style="color: var(--danger);">*</span>
+                            </label>
+                            <select class="form-select" name="custodio_id" id="select-custodio-mision" required>
+                                <option value="">Seleccione un custodio</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-hourglass-half"></i> Tipo de Misión <span style="color: var(--danger);">*</span>
+                            </label>
+                            <select class="form-select" name="tipo_mision" required onchange="actualizarIconoMision(this.value)" style="background-image: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); background-clip: text; -webkit-background-clip: text;">
+                                <option value="">Seleccione tipo de misión</option>
+                                <option value="corta">⚡ Misión Corta (0-4 horas)</option>
+                                <option value="larga">🏔️ Misión Larga (5+ horas)</option>
+                            </select>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                <i class="fas fa-info-circle"></i> Selecciona la duración estimada
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: DESCRIPCIÓN Y DETALLES -->
+                    <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">
+                            <i class="fas fa-pencil-alt"></i> Descripción de la Misión
+                        </h4>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-file-alt"></i> Descripción <span style="color: var(--danger);">*</span>
+                            </label>
+                            <textarea
+                                class="form-textarea"
+                                name="descripcion"
+                                required
+                                placeholder="Describe brevemente qué se debe hacer en esta misión..."
+                                style="resize: vertical; min-height: 120px; font-size: 0.95rem;"></textarea>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                <i class="fas fa-info-circle"></i> Máximo detalle para mejor seguimiento
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <i class="fas fa-sticky-note"></i> Observaciones Adicionales
+                            </label>
+                            <textarea
+                                class="form-textarea"
+                                name="observaciones"
+                                placeholder="Notas adicionales, instrucciones especiales, riesgos a considerar, etc..."
+                                style="resize: vertical; min-height: 100px; font-size: 0.95rem;"></textarea>
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary); font-size: 0.8rem;">
+                                <i class="fas fa-info-circle"></i> Campo opcional
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 3: BOTONES DE ACCIÓN -->
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button
+                            type="reset"
+                            class="btn btn-secondary"
+                            style="flex: 1; padding: 1rem 1.5rem; font-size: 1rem; border: 1px solid var(--border); transition: all 0.2s;"
+                            onmouseover="this.style.background='var(--text-secondary)'; this.style.transform='translateY(-2px)';"
+                            onmouseout="this.style.background='var(--secondary)'; this.style.transform='translateY(0)';">
+                            <i class="fas fa-redo"></i> Limpiar Formulario
+                        </button>
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                            style="flex: 1; padding: 1rem 1.5rem; font-size: 1rem; font-weight: 700; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3); transition: all 0.2s;"
+                            onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(37, 99, 235, 0.4)';"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(37, 99, 235, 0.3)';">
+                            <i class="fas fa-check-circle"></i> Crear Misión
+                        </button>
+                    </div>
+
+                    <!-- INFORMACIÓN ÚTIL -->
+                    <div style="margin-top: 1.5rem; padding: 1rem; background: #dbeafe; border-radius: 10px; border-left: 3px solid var(--primary);">
+                        <p style="font-size: 0.85rem; color: #1e40af; margin: 0;">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>Consejo:</strong> Las misiones ayudan a registrar actividades de los custodios.
+                            Sé lo más específico posible en la descripción.
+                        </p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL PARA COMPLETAR MISIÓN ==================== -->
+    <div class="modal" id="modal-completar-mision">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Completar Misión</h3>
+                <button class="close-modal" onclick="closeModal('modal-completar-mision')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-completar-mision" onsubmit="completarMision(event)">
+                    <input type="hidden" name="mision_id" id="mision-id-completar">
+
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">Información de la Misión</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CUSTODIO</p>
+                                <p id="info-custodio-completar" style="font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">TIPO</p>
+                                <p id="info-tipo-completar" style="font-weight: 700;">-</p>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">DESCRIPCIÓN</p>
+                            <p id="info-descripcion-completar" style="font-weight: 600; color: var(--text-primary);">-</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-comment"></i> Observaciones del Cierre</label>
+                        <textarea class="form-textarea" name="observaciones_cierre" placeholder="Describe cómo resultó la misión, dificultades, logros, etc..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modal-completar-mision')" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-success" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-check"></i> Completar Misión
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL PARA VER HISTORIAL CUSTODIO ==================== -->
+    <div class="modal" id="modal-historial-custodio">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-history"></i> Historial de Misiones</h3>
+                <button class="close-modal" onclick="closeModal('modal-historial-custodio')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body">
+                <div id="historial-custodio-contenido"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal" id="modal-custodio">
         <div class="modal-content">
             <div class="modal-header">
@@ -2013,11 +2402,15 @@ try {
         </div>
     </div>
 
+
     <script>
         let sidebarCollapsed = false;
         let gpsDispositivos = [];
         let custodios = [];
         let asignaciones = [];
+
+        // ==================== VARIABLES GLOBALES PARA NOTIFICACIONES ====================
+        let notificacionesVistas = {}; // Almacenamiento en MEMORIA (no localStorage)
 
         function toggleSidebarCollapse() {
             sidebarCollapsed = !sidebarCollapsed;
@@ -2153,13 +2546,22 @@ try {
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded - Iniciando carga de datos');
             cargarDatosUsuario();
-            solicitarPermisoNotificaciones();
 
-            // Esperar un poco y luego cargar datos del servidor
-            setTimeout(() => {
-                cargarDatosDelServidor();
+            // Solicitar permisos de notificaciones del navegador
+            if ('Notification' in window && Notification.permission === 'default') {
+                console.log('Solicitando permisos de notificación...');
+                Notification.requestPermission();
+            }
+
+            // Cargar datos del servidor y LUEGO iniciar notificaciones
+            cargarDatosDelServidor().then(() => {
+                console.log('✅ Datos cargados, iniciando verificación de notificaciones');
                 iniciarVerificacionNotificaciones();
-            }, 500);
+            }).catch(error => {
+                console.error('Error al cargar datos:', error);
+                // Aún así iniciar verificación por si acaso
+                iniciarVerificacionNotificaciones();
+            });
         });
 
         window.addEventListener('beforeunload', function() {
@@ -2175,15 +2577,14 @@ try {
 
         async function cargarDatosDelServidor() {
             try {
+                console.log('Iniciando carga de datos del servidor...');
                 const [gpsResponse, custodiosResponse, asignacionesResponse] = await Promise.all([
                     fetch('api/get_gps.php'),
                     fetch('api/get_custodios.php'),
                     fetch('api/get_asignaciones.php')
                 ]);
 
-                console.log('GPS Response:', gpsResponse);
-                console.log('Custodios Response:', custodiosResponse);
-                console.log('Asignaciones Response:', asignacionesResponse);
+                console.log('Respuestas recibidas');
 
                 const gpsData = await gpsResponse.json();
                 const custodiosData = await custodiosResponse.json();
@@ -2198,17 +2599,22 @@ try {
                 asignaciones = Array.isArray(asignacionesData) ? asignacionesData : [];
 
                 console.log('Variables globales actualizadas:', {
-                    gpsDispositivos,
-                    custodios,
-                    asignaciones
+                    gpsDispositivos: gpsDispositivos.length,
+                    custodios: custodios.length,
+                    asignaciones: asignaciones.length
                 });
+
                 actualizarTodo();
+                console.log('✅ actualizarTodo() ejecutado');
+                return Promise.resolve();
+
             } catch (error) {
                 console.error('Error cargando datos del servidor:', error);
                 gpsDispositivos = [];
                 custodios = [];
                 asignaciones = [];
                 actualizarTodo();
+                return Promise.reject(error);
             }
         }
 
@@ -2280,6 +2686,87 @@ try {
             event.preventDefault();
             const formData = new FormData(event.target);
 
+            const gpsId = formData.get('gpsId');
+            const custodioId = formData.get('custodioId');
+
+            // Validar que se hayan seleccionado GPS y custodio
+            if (!gpsId || !custodioId) {
+                alert('❌ Por favor completa todos los campos requeridos');
+                return;
+            }
+
+            // Obtener el GPS seleccionado
+            const gps = gpsDispositivos.find(g => parseInt(g.id) === parseInt(gpsId));
+            if (!gps) {
+                alert('❌ GPS no encontrado');
+                return;
+            }
+
+            // Obtener el custodio seleccionado
+            const custodio = custodios.find(c => parseInt(c.id) === parseInt(custodioId));
+            if (!custodio) {
+                alert('❌ Custodio no encontrado');
+                return;
+            }
+
+            // Validar que el GPS no tenga una asignación activa
+            const asignacionActiva = asignaciones.find(a =>
+                parseInt(a.gps_id) === parseInt(gpsId) && a.estado === 'asignado'
+            );
+
+            if (asignacionActiva) {
+                alert('❌ Este GPS ya tiene una asignación activa.\n\nCustodio: ' + asignacionActiva.custodio_nombre +
+                    '\nAsignado desde: ' + new Date(asignacionActiva.fecha_asignacion).toLocaleString('es-HN'));
+                return;
+            }
+
+            // VALIDACIÓN FUERTE: Rango de fechas (no más de 7 días anteriores)
+            const hoyActual = new Date();
+            const hoySolo = new Date(hoyActual.getFullYear(), hoyActual.getMonth(), hoyActual.getDate());
+
+            // Calcular fecha mínima permitida (7 días anteriores)
+            const fechaMinima = new Date(hoySolo);
+            fechaMinima.setDate(fechaMinima.getDate() - 7);
+
+            // Obtener la fecha de asignación del formulario
+            const fechaAsignacionInput = event.target.querySelector('input[name="fecha_asignacion"]');
+            let fechaSeleccionada = new Date(hoySolo); // Por defecto, hoy
+
+            if (fechaAsignacionInput && fechaAsignacionInput.value) {
+                fechaSeleccionada = new Date(fechaAsignacionInput.value);
+            }
+
+            const fechaSeleccionadaSolo = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), fechaSeleccionada.getDate());
+
+            // LOG PARA DEBUG
+            console.log('=== VALIDACIÓN DE FECHA ===');
+            console.log('Fecha hoy: ' + hoySolo.toLocaleDateString('es-HN') + ' (' + hoySolo.getTime() + ')');
+            console.log('Fecha mínima (7 días atrás): ' + fechaMinima.toLocaleDateString('es-HN') + ' (' + fechaMinima.getTime() + ')');
+            console.log('Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN') + ' (' + fechaSeleccionadaSolo.getTime() + ')');
+            console.log('¿Es válida?', fechaSeleccionadaSolo.getTime() >= fechaMinima.getTime() && fechaSeleccionadaSolo.getTime() <= hoySolo.getTime());
+
+            // VALIDAR QUE NO SEA MÁS DE 7 DÍAS ANTERIOR
+            if (fechaSeleccionadaSolo.getTime() < fechaMinima.getTime()) {
+                const diferenciaDias = Math.floor((hoySolo.getTime() - fechaSeleccionadaSolo.getTime()) / (1000 * 60 * 60 * 24));
+                alert('❌ NO PUEDES ASIGNAR UN GPS CON UNA FECHA ANTERIOR A 7 DÍAS.\n\n' +
+                    'Fecha mínima permitida: ' + fechaMinima.toLocaleDateString('es-HN') + '\n' +
+                    'Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN') + '\n' +
+                    'Días de diferencia: ' + diferenciaDias + ' días');
+                console.error('❌ RECHAZADA: Fecha anterior a 7 días');
+                return;
+            }
+
+            // VALIDAR QUE NO SEA UNA FECHA FUTURA
+            if (fechaSeleccionadaSolo.getTime() > hoySolo.getTime()) {
+                alert('❌ NO PUEDES ASIGNAR UN GPS CON UNA FECHA FUTURA.\n\n' +
+                    'Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN') + '\n' +
+                    'Fecha de hoy: ' + hoySolo.toLocaleDateString('es-HN'));
+                console.error('❌ RECHAZADA: Fecha futura');
+                return;
+            }
+
+            console.log('✅ Fecha válida - Procediendo con asignación');
+
             try {
                 const response = await fetch('api/assign_gps.php', {
                     method: 'POST',
@@ -2289,7 +2776,7 @@ try {
                 const data = await response.json();
 
                 if (data.success) {
-                    agregarNotificacion('GPS Asignado', `GPS asignado exitosamente`);
+                    agregarNotificacion('GPS Asignado', `${gps.imei} asignado a ${custodio.nombre}`);
                     event.target.reset();
                     await cargarDatosDelServidor();
                     alert('✅ GPS asignado correctamente');
@@ -2305,6 +2792,33 @@ try {
         async function retornarGPS(event) {
             event.preventDefault();
             const formData = new FormData(event.target);
+            const asignacionId = formData.get('asignacionId');
+
+            // Validar que se haya seleccionado una asignación
+            if (!asignacionId) {
+                alert('❌ Por favor selecciona un GPS para retornar');
+                return;
+            }
+
+            // Obtener la asignación
+            const asignacion = asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId));
+            if (!asignacion) {
+                alert('❌ Asignación no encontrada');
+                return;
+            }
+
+            // Validar que no intente retornar con una fecha anterior a la asignación
+            const fechaAsignacion = new Date(asignacion.fecha_asignacion);
+            const ahora = new Date();
+
+            const fechaAsignacionSolo = new Date(fechaAsignacion.getFullYear(), fechaAsignacion.getMonth(), fechaAsignacion.getDate());
+            const ahoraSolo = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+
+            if (ahoraSolo.getTime() < fechaAsignacionSolo.getTime()) {
+                alert('❌ No puedes registrar un retorno con una fecha anterior a la asignación.\n\n' +
+                    'Fecha de asignación: ' + fechaAsignacion.toLocaleString('es-HN'));
+                return;
+            }
 
             try {
                 const response = await fetch('api/return_gps.php', {
@@ -2315,9 +2829,15 @@ try {
                 const data = await response.json();
 
                 if (data.success) {
-                    agregarNotificacion('GPS Retornado', `GPS retornado exitosamente`);
+                    agregarNotificacion('GPS Retornado', `GPS ${asignacion.imei} retornado exitosamente`);
                     event.target.reset();
-                    document.getElementById('info-retorno').classList.add('hidden');
+
+                    // Verificar que el elemento existe antes de usarlo
+                    const infoRetorno = document.getElementById('info-retorno-bloque');
+                    if (infoRetorno) {
+                        infoRetorno.classList.add('hidden');
+                    }
+
                     await cargarDatosDelServidor();
                     alert('✅ Retorno registrado correctamente');
                 } else {
@@ -2627,25 +3147,38 @@ try {
         }
 
         function mostrarInfoRetorno(id) {
+            const infoRetornoBloque = document.getElementById('info-retorno-bloque');
+
             if (!id) {
-                document.getElementById('info-retorno-bloque').classList.add('hidden');
+                if (infoRetornoBloque) {
+                    infoRetornoBloque.classList.add('hidden');
+                }
                 return;
             }
 
             const asignacion = Array.isArray(asignaciones) ? asignaciones.find(x => parseInt(x.id) === parseInt(id)) : null;
             if (!asignacion) {
-                document.getElementById('info-retorno-bloque').classList.add('hidden');
+                if (infoRetornoBloque) {
+                    infoRetornoBloque.classList.add('hidden');
+                }
                 return;
             }
 
             const dias = Math.floor((Date.now() - new Date(asignacion.fecha_asignacion)) / 86400000);
 
-            document.getElementById('retorno-imei').textContent = asignacion.imei || '-';
-            document.getElementById('retorno-cliente').textContent = asignacion.cliente || '-';
-            document.getElementById('retorno-custodio').textContent = asignacion.custodio_nombre || '-';
-            document.getElementById('retorno-dias').textContent = `${dias} día${dias !== 1 ? 's' : ''}`;
+            const retornoImei = document.getElementById('retorno-imei');
+            const retornoCliente = document.getElementById('retorno-cliente');
+            const returnoCustodio = document.getElementById('retorno-custodio');
+            const retornoDias = document.getElementById('retorno-dias');
 
-            document.getElementById('info-retorno-bloque').classList.remove('hidden');
+            if (retornoImei) retornoImei.textContent = asignacion.imei || '-';
+            if (retornoCliente) retornoCliente.textContent = asignacion.cliente || '-';
+            if (returnoCustodio) returnoCustodio.textContent = asignacion.custodio_nombre || '-';
+            if (retornoDias) retornoDias.textContent = `${dias} día${dias !== 1 ? 's' : ''}`;
+
+            if (infoRetornoBloque) {
+                infoRetornoBloque.classList.remove('hidden');
+            }
         }
 
         function consultarGPS() {
@@ -2933,7 +3466,6 @@ try {
             }
         }
 
-
         // ==================== CONFIGURACIÓN DE NOTIFICACIONES ====================
         const CONFIG_ALERTAS = {
             PRIMERA_ALERTA: 24,
@@ -2944,10 +3476,19 @@ try {
         let intervaloNotificaciones = null;
 
         function iniciarVerificacionNotificaciones() {
+            console.log('🚀 Iniciando sistema de notificaciones...');
+            console.log('CONFIG_ALERTAS:', CONFIG_ALERTAS);
+
+            // Verificar INMEDIATAMENTE al iniciar
             verificarNotificacionesRecuperacion();
+
+            // Y luego cada 5 minutos
             intervaloNotificaciones = setInterval(() => {
+                console.log('⏱️ Verificación periódica de notificaciones...');
                 verificarNotificacionesRecuperacion();
-            }, 5 * 60 * 1000);
+            }, 5 * 60 * 1000); // 5 minutos
+
+            console.log('✅ Sistema de notificaciones activo');
         }
 
         function detenerVerificacionNotificaciones() {
@@ -2958,36 +3499,55 @@ try {
         }
 
         function verificarNotificacionesRecuperacion() {
-            if (!Array.isArray(asignaciones)) return;
+            console.log('🔔 Verificando notificaciones...');
+            console.log('asignaciones disponibles:', asignaciones);
+            console.log('Es array?:', Array.isArray(asignaciones));
+
+            if (!Array.isArray(asignaciones)) {
+                console.warn('⚠️ asignaciones no es un array', asignaciones);
+                return;
+            }
 
             const asignacionesActivas = asignaciones.filter(a => a.estado === 'asignado');
+            console.log('Asignaciones activas encontradas:', asignacionesActivas.length);
+
+            if (asignacionesActivas.length === 0) {
+                console.log('✓ Sin asignaciones activas, no hay notificaciones que enviar');
+                return;
+            }
 
             asignacionesActivas.forEach(asignacion => {
                 const horasAsignado = calcularHorasAsignado(asignacion.fecha_asignacion);
                 const notificacionKey = `notif_${asignacion.id}`;
-                const notificacionesVistas = JSON.parse(localStorage.getItem('notificacionesVistas') || '{}');
 
+                console.log(`\n📍 GPS ${asignacion.imei}:`);
+                console.log(`   Horas asignado: ${horasAsignado.toFixed(2)}`);
+                console.log(`   Ya notificado en 24h: ${!!notificacionesVistas[`${notificacionKey}_24h`]}`);
+                console.log(`   Ya notificado en 48h: ${!!notificacionesVistas[`${notificacionKey}_48h`]}`);
+                console.log(`   Ya notificado en 72h: ${!!notificacionesVistas[`${notificacionKey}_72h`]}`);
+
+                // ✅ AHORA USA LA VARIABLE GLOBAL EN MEMORIA, NO localStorage
                 if (horasAsignado >= CONFIG_ALERTAS.PRIMERA_ALERTA &&
                     horasAsignado < CONFIG_ALERTAS.SEGUNDA_ALERTA &&
                     !notificacionesVistas[`${notificacionKey}_24h`]) {
+                    console.log('   ✉️ Enviando notificación 24h...');
                     enviarNotificacionRecuperacion(asignacion, horasAsignado, 'warning', 24);
                     notificacionesVistas[`${notificacionKey}_24h`] = true;
-                    localStorage.setItem('notificacionesVistas', JSON.stringify(notificacionesVistas));
                 }
 
                 if (horasAsignado >= CONFIG_ALERTAS.SEGUNDA_ALERTA &&
                     horasAsignado < CONFIG_ALERTAS.TERCERA_ALERTA &&
                     !notificacionesVistas[`${notificacionKey}_48h`]) {
+                    console.log('   ✉️ Enviando notificación 48h...');
                     enviarNotificacionRecuperacion(asignacion, horasAsignado, 'danger', 48);
                     notificacionesVistas[`${notificacionKey}_48h`] = true;
-                    localStorage.setItem('notificacionesVistas', JSON.stringify(notificacionesVistas));
                 }
 
                 if (horasAsignado >= CONFIG_ALERTAS.TERCERA_ALERTA &&
                     !notificacionesVistas[`${notificacionKey}_72h`]) {
+                    console.log('   ✉️ Enviando notificación 72h...');
                     enviarNotificacionRecuperacion(asignacion, horasAsignado, 'critical', 72);
                     notificacionesVistas[`${notificacionKey}_72h`] = true;
-                    localStorage.setItem('notificacionesVistas', JSON.stringify(notificacionesVistas));
                 }
             });
         }
@@ -3000,8 +3560,15 @@ try {
         }
 
         function enviarNotificacionRecuperacion(asignacion, horasAsignado, tipo, horas) {
+            console.log(`📨 Enviando notificación tipo "${tipo}" para GPS ${asignacion.imei}`);
+
             const notificationList = document.getElementById('notification-list');
             const notifBadge = document.getElementById('notif-badge');
+
+            if (!notificationList) {
+                console.error('❌ ERROR: No se encontró elemento notification-list');
+                return;
+            }
 
             const notifId = 'notif-' + asignacion.id + '-' + horas + '-' + Date.now();
 
@@ -3027,36 +3594,40 @@ try {
             notifItem.id = notifId;
             notifItem.style.borderLeft = `4px solid ${colorTipo}`;
             notifItem.innerHTML = `
-        <div class="notification-item-header">
-            <span class="notification-item-title">${titulo}</span>
-            <span class="notification-item-time">Ahora</span>
-        </div>
-        <div class="notification-item-body" style="margin: 0.75rem 0;">
-            <strong>GPS IMEI:</strong> ${asignacion.imei}<br>
-            <strong>Custodio:</strong> ${asignacion.custodio_nombre}<br>
-            <strong>Cliente:</strong> ${asignacion.cliente}<br>
-            <strong>Teléfono:</strong> ${asignacion.custodio_telefono}<br>
-            <strong style="color: ${colorTipo};">Urgencia:</strong> <span style="color: ${colorTipo};">${urgencia}</span><br>
-            <small style="color: var(--text-secondary);">Asignado hace ${Math.floor(horasAsignado)} horas</small>
-        </div>
-        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
-            <button class="btn btn-primary" onclick="irARetornar(${asignacion.id})" style="padding: 0.5rem 1rem; font-size: 0.85rem; flex: 1;">
-                <i class="fas fa-undo"></i> Registrar Retorno
-            </button>
-            <button class="btn" onclick="contactarCustodio('${asignacion.custodio_telefono}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background-color: #06b6d4; color: white; border-radius: 8px; border: none; cursor: pointer;">
-                <i class="fas fa-phone"></i> Contactar
-            </button>
-            <button class="btn btn-secondary" onclick="confirmarNotificacion('${notifId}')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
-                <i class="fas fa-check"></i> Listo
-            </button>
-        </div>
-    `;
+                <div class="notification-item-header">
+                    <span class="notification-item-title">${titulo}</span>
+                    <span class="notification-item-time">Ahora</span>
+                </div>
+                <div class="notification-item-body" style="margin: 0.75rem 0;">
+                    <strong>GPS IMEI:</strong> ${asignacion.imei}<br>
+                    <strong>Custodio:</strong> ${asignacion.custodio_nombre}<br>
+                    <strong>Cliente:</strong> ${asignacion.cliente}<br>
+                    <strong>Teléfono:</strong> ${asignacion.custodio_telefono}<br>
+                    <strong style="color: ${colorTipo};">Urgencia:</strong> <span style="color: ${colorTipo};">${urgencia}</span><br>
+                    <small style="color: var(--text-secondary);">Asignado hace ${Math.floor(horasAsignado)} horas</small>
+                </div>
+                <div style="margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="btn btn-primary" onclick="irARetornar(${asignacion.id})" style="padding: 0.5rem 1rem; font-size: 0.85rem; flex: 1;">
+                        <i class="fas fa-undo"></i> Registrar Retorno
+                    </button>
+                    <button class="btn" onclick="contactarCustodio('${asignacion.custodio_telefono}')" style="padding: 0.5rem 1rem; font-size: 0.85rem; background-color: #06b6d4; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                        <i class="fas fa-phone"></i> Contactar
+                    </button>
+                    <button class="btn btn-secondary" onclick="confirmarNotificacion('${notifId}')" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+                        <i class="fas fa-check"></i> Listo
+                    </button>
+                </div>
+            `;
 
             notificationList.insertBefore(notifItem, notificationList.firstChild);
+            console.log('✅ Elemento HTML de notificación agregado:', notifId);
 
-            const currentCount = parseInt(notifBadge.textContent) || 0;
-            notifBadge.textContent = currentCount + 1;
-            notifBadge.classList.remove('hidden');
+            if (notifBadge) {
+                const currentCount = parseInt(notifBadge.textContent) || 0;
+                notifBadge.textContent = currentCount + 1;
+                notifBadge.classList.remove('hidden');
+                console.log('✅ Badge actualizado:', currentCount + 1);
+            }
 
             if (tipo === 'critical') {
                 reproducirSonidoAlerta();
@@ -3104,11 +3675,891 @@ try {
             }
         }
 
-        function solicitarPermisoNotificaciones() {
-            if ('Notification' in window && Notification.permission === 'default') {
-                Notification.requestPermission();
+        // ==================== FUNCIONES PARA MÓDULO DE MISIONES ====================
+        // Variables globales para misiones
+        let misiones = [];
+        let tiposMisiones = [];
+
+        // Cargar misiones al iniciar
+        async function cargarMisiones() {
+            try {
+                console.log('Cargando misiones...');
+                const response = await fetch('api/get_misiones.php');
+                const data = await response.json();
+                misiones = Array.isArray(data) ? data : [];
+                console.log('✅ Misiones cargadas:', misiones.length);
+                actualizarTablaMisiones();
+                actualizarEstadisticasMisiones();
+            } catch (error) {
+                console.error('Error cargando misiones:', error);
+                misiones = [];
             }
         }
+
+        // Cargar tipos de misiones
+        async function cargarTiposMisiones() {
+            try {
+                const response = await fetch('api/get_tipos_misiones.php');
+                const data = await response.json();
+                tiposMisiones = Array.isArray(data) ? data : [];
+                console.log('✅ Tipos de misiones cargados:', tiposMisiones.length);
+            } catch (error) {
+                console.error('Error cargando tipos de misiones:', error);
+                tiposMisiones = [];
+            }
+        }
+
+        // Mostrar modal para crear misión
+        function showModalMision() {
+            document.getElementById('form-mision').reset();
+            document.getElementById('modal-mision').classList.add('active');
+            cargarSelectoresMisiones();
+        }
+
+        // Cargar selectores en el formulario de misión
+        async function cargarSelectoresMisiones() {
+            // Cargar custodios
+            const selectCustodio = document.getElementById('select-custodio-mision');
+            if (selectCustodio && Array.isArray(custodios)) {
+                selectCustodio.innerHTML = '<option value="">Seleccione un custodio</option>';
+                custodios.forEach(c => {
+                    selectCustodio.innerHTML += `<option value="${c.id}">${c.nombre} (${c.cargo})</option>`;
+                });
+            }
+
+            // NO NECESITAMOS cargar GPS asignados ya que fue removido
+        }
+
+        // Cargar GPS asignados
+        const selectGPS = document.querySelector('#form-mision select[name="asignacion_gps_id"]');
+        if (selectGPS && Array.isArray(asignaciones)) {
+            const activos = asignaciones.filter(a => a.estado === 'asignado');
+            selectGPS.innerHTML = '<option value="">Sin GPS asociado</option>';
+            activos.forEach(a => {
+                selectGPS.innerHTML += `<option value="${a.id}">${a.imei} (${a.custodio_nombre})</option>`;
+            });
+        }
+
+        // Crear misión
+        async function crearMision(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            try {
+                const response = await fetch('api/add_mision.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                // ✅ CAPTURA EL TEXTO PRIMERO (no JSON directamente)
+                const texto = await response.text();
+                console.log('📨 Respuesta del servidor:', texto);
+
+                // Intentar parsear como JSON
+                let data;
+                try {
+                    data = JSON.parse(texto);
+                } catch (parseError) {
+                    console.error('❌ Error al parsear JSON:', parseError);
+                    console.error('Contenido recibido:', texto.substring(0, 500));
+                    alert('Error en la respuesta del servidor:\n\n' + texto.substring(0, 300));
+                    return;
+                }
+
+                if (data.success) {
+                    agregarNotificacion('Nueva Misión Creada', `Misión ${data.codigo_mision} creada exitosamente`);
+                    event.target.reset();
+                    closeModal('modal-mision');
+                    await cargarMisiones();
+                    alert('✅ Misión creada correctamente');
+                } else {
+                    alert('❌ ' + (data.message || 'Error al crear misión'));
+                }
+            } catch (error) {
+                console.error('Error de red:', error);
+                alert('❌ Error al crear misión: ' + error.message);
+            }
+        }
+
+        // Actualizar tabla de misiones
+        function actualizarTablaMisiones() {
+            console.log('Actualizando tabla de misiones con:', misiones);
+            const tbody = document.querySelector('#tabla-misiones tbody');
+
+            if (!Array.isArray(misiones) || misiones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">
+            <div class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <h3>No hay misiones registradas</h3>
+                <p>Crea tu primera misión</p>
+            </div>
+        </td></tr>`;
+                return;
+            }
+
+            let html = '';
+            misiones.forEach(mision => {
+                const estadoClass = mision.estado === 'pendiente' ? 'badge-info' :
+                    mision.estado === 'posicionado' ? 'badge-warning' :
+                    mision.estado === 'en_ruta' ? 'badge-danger' :
+                    mision.estado === 'finalizada' ? 'badge-success' :
+                    mision.estado === 'completada' ? 'badge-success' : 'badge-secondary';
+
+                const estadoTexto = {
+                    'pendiente': '⏳ Pendiente',
+                    'posicionado': '📍 Posicionado',
+                    'en_ruta': '🚗 En Ruta',
+                    'finalizada': '✅ Finalizada',
+                    'completada': '✅ Completada',
+                    'cancelada': '❌ Cancelada'
+                } [mision.estado] || 'N/A';
+
+                const tipoClass = mision.tipo_mision === 'corta' ? 'badge-mision-corta' : 'badge-mision-larga';
+                const tipoTexto = mision.tipo_mision === 'corta' ? '⚡ Corta' : '🏔️ Larga';
+
+                const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
+                const duracion = mision.duracion_real || mision.duracion_estimada || '-';
+
+                html += `<tr>
+            <td>${mision.custodio_nombre || 'N/A'}</td>
+            <td><span class="badge ${tipoClass}">${tipoTexto}</span></td>
+            <td>${mision.descripcion ? mision.descripcion.substring(0, 50) + '...' : '-'}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+            <td>${fechaInicio}</td>
+            <td>${duracion} h</td>
+            <td>
+                <div class="btn-group" style="gap: 0.25rem; flex-wrap: wrap;">
+                    ${mision.estado !== 'completada' && mision.estado !== 'cancelada' ? `
+                        <button class="btn" onclick="mostrarModalCambiarEstado(${mision.id}, '${mision.estado}')" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #8b5cf6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                            <i class="fas fa-edit"></i> Estado
+                        </button>
+                    ` : ''}
+                    <button class="btn" onclick="verDetallesMision(${mision.id})" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #3b82f6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Mostrar modal para completar misión
+        function showModalCompletarMision(misionId) {
+            const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
+            if (!mision) return;
+
+            document.getElementById('mision-id-completar').value = misionId;
+            document.getElementById('info-custodio-completar').textContent = mision.custodio_nombre || '-';
+            document.getElementById('info-tipo-completar').textContent = (mision.tipo_mision_id === 1 ? '⚡ Misión Corta' : '🏔️ Misión Larga');
+            document.getElementById('info-descripcion-completar').textContent = mision.descripcion || '-';
+
+            document.getElementById('modal-completar-mision').classList.add('active');
+        }
+
+        // Completar misión
+        async function completarMision(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            try {
+                const response = await fetch('api/completar_mision.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    agregarNotificacion('Misión Completada', `Misión completada exitosamente`);
+                    closeModal('modal-completar-mision');
+                    document.getElementById('form-completar-mision').reset();
+                    await cargarMisiones();
+                    alert('✅ Misión completada correctamente');
+                } else {
+                    alert('❌ ' + (data.message || 'Error al completar misión'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al completar misión');
+            }
+        }
+
+        // Filtrar misiones por estado
+        function filtrarMisionesPorEstado(estado) {
+            // Actualizar botones activos
+            document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.btn-tab').classList.add('active');
+
+            // Filtrar tabla
+            const tbody = document.querySelector('#tabla-misiones tbody');
+            const filas = tbody.querySelectorAll('tr');
+
+            filas.forEach(fila => {
+                if (estado === 'todas') {
+                    fila.style.display = '';
+                } else {
+                    const badgeEstado = fila.querySelector('.badge');
+                    const estadoActual = badgeEstado ? badgeEstado.textContent.toLowerCase() : '';
+
+                    if (estado === 'en_progreso' && (estadoActual.includes('pendiente') || estadoActual.includes('en curso'))) {
+                        fila.style.display = '';
+                    } else if (estado === 'completada' && estadoActual.includes('completada')) {
+                        fila.style.display = '';
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Filtrar tabla de misiones por búsqueda
+        function filtrarTablaMisiones() {
+            const term = document.getElementById('buscar-misiones')?.value.toLowerCase() || '';
+            document.querySelectorAll('#tabla-misiones tbody tr').forEach(tr => {
+                tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
+            });
+        }
+
+        // Actualizar estadísticas de misiones
+        async function actualizarEstadisticasMisiones() {
+            try {
+                const response = await fetch('api/get_estadisticas_misiones.php');
+                const data = await response.json();
+
+                if (data.stats) {
+                    document.getElementById('stat-total-misiones').textContent = data.stats.total_misiones || 0;
+                    document.getElementById('stat-misiones-cortas').textContent = data.stats.misiones_cortas || 0;
+                    document.getElementById('stat-misiones-largas').textContent = data.stats.misiones_largas || 0;
+                    document.getElementById('stat-misiones-activas').textContent = data.stats.misiones_activas || 0;
+                }
+
+                // Actualizar tabla de estadísticas por custodio
+                if (data.estadisticas_custodios) {
+                    const tbody = document.querySelector('#tabla-estadisticas-custodios tbody');
+                    if (tbody) {
+                        let html = '';
+                        data.estadisticas_custodios.forEach(custodio => {
+                            html += `<tr>
+                        <td>${custodio.nombre || '-'}</td>
+                        <td>${custodio.total_misiones || 0}</td>
+                        <td>${custodio.misiones_cortas || 0}</td>
+                        <td>${custodio.misiones_largas || 0}</td>
+                        <td>${custodio.horas_totales || 0} h</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="verHistorialCustodio(${custodio.id})" style="padding: 0.5rem 1rem;">
+                                <i class="fas fa-history"></i> Ver
+                            </button>
+                        </td>
+                    </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    }
+                }
+            } catch (error) {
+                console.error('Error actualizando estadísticas:', error);
+            }
+        }
+
+        // Ver historial de custodio
+        async function verHistorialCustodio(custodioId) {
+            try {
+                const response = await fetch(`api/get_historial_custodio.php?custodio_id=${custodioId}`);
+                const data = await response.json();
+
+                if (data.custodio) {
+                    const contenido = document.getElementById('historial-custodio-contenido');
+
+                    // Función para limpiar texto de etiquetas [Estado: ...]
+                    const limpiarTexto = (texto) => {
+                        if (!texto) return '';
+                        return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
+                    };
+
+                    let html = `
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem;">👤 ${data.custodio.nombre}</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Total Misiones</p>
+                            <p style="font-size: 1.5rem; font-weight: 700;">${data.estadisticas.total_misiones || 0}</p>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Misiones Cortas</p>
+                            <p style="font-size: 1.5rem; font-weight: 700;">${data.estadisticas.misiones_cortas || 0}</p>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Misiones Largas</p>
+                            <p style="font-size: 1.5rem; font-weight: 700;">${data.estadisticas.misiones_largas || 0}</p>
+                        </div>
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 8px;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Horas Totales</p>
+                            <p style="font-size: 1.5rem; font-weight: 700;">${data.estadisticas.horas_totales || 0}h</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem;">📋 Misiones</h4>
+                <div style="max-height: 400px; overflow-y: auto;">
+            `;
+
+                    if (data.misiones && data.misiones.length > 0) {
+                        data.misiones.forEach(mision => {
+                            const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
+
+                            // Determinar el color del badge según el estado
+                            const estadoNormalizado = (mision.estado || '').toLowerCase();
+                            let estadoClass = 'badge-warning';
+                            let estadoIcon = '⏳';
+
+                            if (estadoNormalizado === 'finalizada' || estadoNormalizado === 'completada') {
+                                estadoClass = 'badge-success';
+                                estadoIcon = '✅';
+                            } else if (estadoNormalizado === 'cancelada') {
+                                estadoClass = 'badge-danger';
+                                estadoIcon = '❌';
+                            } else if (estadoNormalizado === 'en_ruta') {
+                                estadoClass = 'badge-info';
+                                estadoIcon = '🚗';
+                            } else if (estadoNormalizado === 'posicionado') {
+                                estadoClass = 'badge-primary';
+                                estadoIcon = '📍';
+                            }
+
+                            // Limpiar descripción
+                            const descripcionLimpia = limpiarTexto(mision.descripcion);
+
+                            html += `
+                        <div class="mision-card" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 12px; border-left: 4px solid var(--primary);">
+                            <div class="mision-card-header" style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.75rem;">
+                                <div style="flex: 1;">
+                                    <div class="mision-card-title" style="font-weight: 700; font-size: 1.05rem; color: var(--text-primary);">
+                                        ${mision.nombre_mision || 'Sin nombre'}
+                                    </div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                        ${mision.codigo_mision || '-'}
+                                    </p>
+                                </div>
+                                <span class="badge ${estadoClass}" style="white-space: nowrap; margin-left: 1rem;">
+                                    ${estadoIcon} ${mision.estado}
+                                </span>
+                            </div>
+                            
+                            ${descripcionLimpia ? `
+                                <p style="font-size: 0.9rem; color: var(--text-secondary); margin: 0.5rem 0; line-height: 1.5;">
+                                    ${descripcionLimpia}
+                                </p>
+                            ` : ''}
+                            
+                            <div class="mision-card-details" style="margin: 0.75rem 0; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                                <div class="mision-detail">
+                                    <div class="mision-detail-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                        📅 Fecha
+                                    </div>
+                                    <div class="mision-detail-value" style="font-size: 0.9rem; font-weight: 600;">
+                                        ${fechaInicio}
+                                    </div>
+                                </div>
+                                <div class="mision-detail">
+                                    <div class="mision-detail-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
+                                        ⏱️ Duración
+                                    </div>
+                                    <div class="mision-detail-value" style="font-weight: 600;">
+                                        ${mision.duracion_real || mision.duracion_estimada || '0'} h
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                        });
+                    } else {
+                        html += `
+                    <div style="text-align: center; padding: 3rem;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">📭</div>
+                        <p style="color: var(--text-secondary); font-size: 1rem;">
+                            Sin misiones registradas
+                        </p>
+                    </div>
+                `;
+                    }
+
+                    html += '</div>';
+                    contenido.innerHTML = html;
+                    document.getElementById('modal-historial-custodio').classList.add('active');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al obtener historial');
+            }
+        }
+
+        // Ver detalles de misión
+
+        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO
+
+        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO Y CORREGIDO
+        function verDetallesMision(misionId) {
+            const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
+            if (!mision) return;
+
+            const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const fechaFin = mision.fecha_fin ?
+                new Date(mision.fecha_fin).toLocaleString('es-HN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }) :
+                '<span style="color: #94a3b8;">Sin completar</span>';
+
+            // Determinar color del estado
+            const estadoColors = {
+                'pendiente': {
+                    bg: '#fef3c7',
+                    text: '#92400e',
+                    icon: '⏳'
+                },
+                'posicionado': {
+                    bg: '#dbeafe',
+                    text: '#1e40af',
+                    icon: '📍'
+                },
+                'en_ruta': {
+                    bg: '#e0e7ff',
+                    text: '#4338ca',
+                    icon: '🚗'
+                },
+                'finalizada': {
+                    bg: '#d1fae5',
+                    text: '#065f46',
+                    icon: '✅'
+                },
+                'cancelada': {
+                    bg: '#fee2e2',
+                    text: '#991b1b',
+                    icon: '❌'
+                },
+                'activa': {
+                    bg: '#ddd6fe',
+                    text: '#5b21b6',
+                    icon: '🔵'
+                }
+            };
+
+            const estadoKey = (mision.estado || '').toLowerCase().replace(' ', '_');
+            const estadoColor = estadoColors[estadoKey] || estadoColors['pendiente'];
+
+            // Determinar icono del tipo de misión
+            const tipoMision = mision.tipo_mision_id === 1 ? {
+                icono: '⚡',
+                texto: 'Misión Corta',
+                color: '#f59e0b'
+            } : {
+                icono: '🏔️',
+                texto: 'Misión Larga',
+                color: '#8b5cf6'
+            };
+
+            // Determinar color de prioridad
+            const prioridadColors = {
+                'baja': {
+                    bg: '#f3f4f6',
+                    text: '#6b7280',
+                    icon: '🔵'
+                },
+                'media': {
+                    bg: '#fef3c7',
+                    text: '#92400e',
+                    icon: '🟡'
+                },
+                'alta': {
+                    bg: '#fee2e2',
+                    text: '#991b1b',
+                    icon: '🔴'
+                }
+            };
+
+            const prioridadKey = (mision.prioridad || 'media').toLowerCase();
+            const prioridadColor = prioridadColors[prioridadKey] || prioridadColors['media'];
+
+            // Limpiar descripción y observaciones (remover etiquetas [Estado: ...])
+            const limpiarTexto = (texto) => {
+                if (!texto) return '';
+                // Remover todas las etiquetas [Estado: ...] del texto
+                return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
+            };
+
+            const descripcionLimpia = limpiarTexto(mision.descripcion);
+            const observacionesLimpias = limpiarTexto(mision.observaciones);
+            const observacionesFinalizacionLimpias = limpiarTexto(mision.observaciones_finalizacion);
+
+            const html = `
+    <div class="modal active" id="modal-detalles-mision" style="display: flex !important; z-index: 10000;">
+        <div class="modal-content" style="max-width: 700px; margin: auto; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white; border-radius: 20px 20px 0 0; padding: 2rem;">
+                <h3 style="margin: 0; font-size: 1.5rem; font-weight: 700;">
+                    <i class="fas fa-clipboard-list"></i> Detalles de la Misión
+                </h3>
+                <button class="close-modal" onclick="cerrarModalDetalles()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: all 0.3s;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body" style="padding: 2rem;">
+                
+                <!-- Custodio y Estado -->
+                <div style="background: linear-gradient(135deg, #f6f8fb, #ffffff); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border: 2px solid #e5e7eb;">
+                    <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.5rem; font-weight: 700; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                            ${(mision.custodio_nombre || 'N').charAt(0).toUpperCase()}
+                        </div>
+                        <div style="flex: 1;">
+                            <p style="font-size: 0.75rem; color: #6b7280; margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                                👤 CUSTODIO ASIGNADO
+                            </p>
+                            <p style="font-size: 1.25rem; font-weight: 700; margin: 0.25rem 0 0 0; color: #1f2937;">
+                                ${mision.custodio_nombre || 'N/A'}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${estadoColor.bg}; color: ${estadoColor.text}; border-radius: 10px; font-size: 0.9rem; font-weight: 600;">
+                            <span>${estadoColor.icon}</span>
+                            <span>${mision.estado || 'Sin estado'}</span>
+                        </div>
+                        
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: ${prioridadColor.bg}; color: ${prioridadColor.text}; border-radius: 10px; font-size: 0.9rem; font-weight: 600;">
+                            <span>${prioridadColor.icon}</span>
+                            <span>Prioridad ${mision.prioridad || 'Media'}</span>
+                        </div>
+                        
+                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, #fef3c7, #fde68a); color: ${tipoMision.color}; border-radius: 10px; font-size: 0.9rem; font-weight: 600;">
+                            <span>${tipoMision.icono}</span>
+                            <span>${tipoMision.texto}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Descripción -->
+                ${descripcionLimpia ? `
+                <div style="background: #f9fafb; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid #667eea;">
+                    <p style="font-size: 0.75rem; color: #6b7280; margin: 0 0 0.75rem 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                        📝 DESCRIPCIÓN
+                    </p>
+                    <p style="margin: 0; color: #374151; line-height: 1.6; font-size: 0.95rem;">
+                        ${descripcionLimpia}
+                    </p>
+                </div>
+                ` : ''}
+                
+                <!-- Fechas y Duración -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    
+                    <!-- Fecha Inicio -->
+                    <div style="background: white; padding: 1.25rem; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #34d399, #10b981); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.1rem;">
+                                🚀
+                            </div>
+                            <p style="font-size: 0.7rem; color: #6b7280; margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                                FECHA INICIO
+                            </p>
+                        </div>
+                        <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
+                            ${fechaInicio}
+                        </p>
+                    </div>
+                    
+                    <!-- Fecha Fin -->
+                    <div style="background: white; padding: 1.25rem; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.1rem;">
+                                🏁
+                            </div>
+                            <p style="font-size: 0.7rem; color: #6b7280; margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                                FECHA FIN
+                            </p>
+                        </div>
+                        <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
+                            ${fechaFin}
+                        </p>
+                    </div>
+                    
+                    <!-- Duración Estimada -->
+                    <div style="background: white; padding: 1.25rem; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.1rem;">
+                                ⏱️
+                            </div>
+                            <p style="font-size: 0.7rem; color: #6b7280; margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                                DURACIÓN ESTIMADA
+                            </p>
+                        </div>
+                        <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
+                            ${mision.duracion_estimada || '0'} horas
+                        </p>
+                    </div>
+                    
+                    <!-- Duración Real -->
+                    <div style="background: white; padding: 1.25rem; border-radius: 12px; border: 2px solid #e5e7eb; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #ec4899, #db2777); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.1rem;">
+                                ✓
+                            </div>
+                            <p style="font-size: 0.7rem; color: #6b7280; margin: 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                                DURACIÓN REAL
+                            </p>
+                        </div>
+                        <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
+                            ${mision.duracion_real || '0'} horas
+                        </p>
+                    </div>
+                    
+                </div>
+                
+                <!-- Observaciones -->
+                ${observacionesLimpias ? `
+                <div style="background: #fffbeb; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid #f59e0b;">
+                    <p style="font-size: 0.75rem; color: #92400e; margin: 0 0 0.75rem 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                        💬 OBSERVACIONES
+                    </p>
+                    <p style="margin: 0; color: #78350f; line-height: 1.6; font-size: 0.95rem;">
+                        ${observacionesLimpias}
+                    </p>
+                </div>
+                ` : ''}
+                
+                <!-- Observaciones de Finalización -->
+                ${observacionesFinalizacionLimpias ? `
+                <div style="background: #f0fdf4; padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem; border-left: 4px solid #10b981;">
+                    <p style="font-size: 0.75rem; color: #065f46; margin: 0 0 0.75rem 0; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px;">
+                        ✅ OBSERVACIONES DE FINALIZACIÓN
+                    </p>
+                    <p style="margin: 0; color: #064e3b; line-height: 1.6; font-size: 0.95rem;">
+                        ${observacionesFinalizacionLimpias}
+                    </p>
+                </div>
+                ` : ''}
+                
+                <!-- Botón Cerrar -->
+                <div style="text-align: center; margin-top: 2rem;">
+                    <button 
+                        onclick="cerrarModalDetalles()" 
+                        class="btn btn-primary" 
+                        style="padding: 1rem 3rem; font-size: 1rem; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); border: none; cursor: pointer; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;">
+                        <i class="fas fa-check"></i> Entendido
+                    </button>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    `;
+
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // Función para cerrar el modal de detalles
+        function cerrarModalDetalles() {
+            const modal = document.getElementById('modal-detalles-mision');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+
+
+
+
+        // Actualizar ícono de misión según tipo
+        function actualizarIconoMision(tipo) {
+            const selectIcono = document.querySelector('#form-mision select[name="tipo_mision"]');
+            if (!selectIcono) return;
+
+            if (tipo === 'corta') {
+                selectIcono.innerHTML = '<option value="">Seleccione tipo</option><option value="corta" selected>⚡ Misión Corta (0-4 horas)</option><option value="larga">🏔️ Misión Larga (5+ horas)</option>';
+            } else if (tipo === 'larga') {
+                selectIcono.innerHTML = '<option value="">Seleccione tipo</option><option value="corta">⚡ Misión Corta (0-4 horas)</option><option value="larga" selected>🏔️ Misión Larga (5+ horas)</option>';
+            }
+        }
+
+        // Modificar el método cargarDatosDelServidor para incluir misiones
+        const originalCargarDatosDelServidor = cargarDatosDelServidor;
+        cargarDatosDelServidor = async function() {
+            try {
+                await originalCargarDatosDelServidor();
+                await cargarMisiones();
+                await cargarTiposMisiones();
+            } catch (error) {
+                console.error('Error en cargarDatosDelServidor:', error);
+            }
+        };
+
+        // Modal para cambiar estado
+
+
+
+        // Modal para cambiar estado - VERSIÓN CORREGIDA
+
+        // Modal para cambiar estado - VERSIÓN CORREGIDA CON VALIDACIONES
+
+        // Modal para cambiar estado - VERSIÓN CON ESTADOS DESHABILITADOS
+        function mostrarModalCambiarEstado(misionId, estadoActual) {
+            const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
+            if (!mision) return;
+
+            const estados = [{
+                    valor: 'pendiente',
+                    label: '⏳ Pendiente'
+                },
+                {
+                    valor: 'posicionado',
+                    label: '📍 Posicionado'
+                },
+                {
+                    valor: 'en_ruta',
+                    label: '🚗 En Ruta'
+                },
+                {
+                    valor: 'finalizada',
+                    label: '✅ Finalizada'
+                },
+                {
+                    valor: 'cancelada',
+                    label: '❌ Cancelada'
+                }
+            ];
+
+            // Normalizar estado actual para comparación
+            const estadoActualNormalizado = estadoActual.toLowerCase().trim();
+
+            // Generar opciones con estados deshabilitados
+            const opcionesHTML = estados.map(e => {
+                const esEstadoActual = e.valor.toLowerCase() === estadoActualNormalizado;
+                const disabled = esEstadoActual ? 'disabled' : '';
+                const textoAdicional = esEstadoActual ? ' (Estado actual)' : '';
+
+                return `<option value="${e.valor}" ${disabled}>${e.label}${textoAdicional}</option>`;
+            }).join('');
+
+            let html = `
+    <div class="modal active" id="modal-cambiar-estado" style="display: flex !important; z-index: 10000;">
+        <div class="modal-content" style="max-width: 600px; margin: auto;">
+            <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 20px 20px 0 0;">
+                <h3><i class="fas fa-edit"></i> Cambiar Estado de Misión</h3>
+                <button class="close-modal" onclick="cerrarModalEstado()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid #8b5cf6;">
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                        📋 INFORMACIÓN DE LA MISIÓN
+                    </p>
+                    <p style="font-weight: 700; font-size: 1.05rem; margin-bottom: 0.5rem; color: var(--text-primary);">
+                        ${mision.custodio_nombre}
+                    </p>
+                    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+                        ${mision.descripcion ? mision.descripcion.substring(0, 80) + '...' : 'Sin descripción'}
+                    </p>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; background: #fef3c7; color: #92400e; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
+                        Estado actual: <strong>${estadoActual}</strong>
+                    </div>
+                </div>
+
+                <form id="form-cambiar-estado" onsubmit="cambiarEstadoMision(event, ${misionId})">
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: 0.95rem; margin-bottom: 0.75rem;">
+                            <i class="fas fa-exchange-alt"></i> Nuevo Estado
+                        </label>
+                        <select class="form-select" name="nuevo_estado" required style="padding: 1rem; font-size: 1rem; border: 2px solid var(--border); border-radius: 12px;">
+                            <option value="">Seleccione nuevo estado</option>
+                            ${opcionesHTML}
+                        </select>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label class="form-label" style="font-size: 0.95rem; margin-bottom: 0.75rem;">
+                            <i class="fas fa-comment-dots"></i> Observaciones (opcional)
+                        </label>
+                        <textarea 
+                            class="form-textarea" 
+                            name="observaciones" 
+                            placeholder="Describe el cambio de estado, razones, notas importantes..."
+                            style="min-height: 100px; padding: 1rem; font-size: 0.95rem; border: 2px solid var(--border); border-radius: 12px; resize: vertical;"></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button 
+                            type="button" 
+                            class="btn btn-secondary" 
+                            onclick="cerrarModalEstado()" 
+                            style="flex: 1; padding: 1rem 1.5rem; font-size: 1rem; border-radius: 12px; font-weight: 600;">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                        <button 
+                            type="submit" 
+                            class="btn btn-primary" 
+                            style="flex: 1; padding: 1rem 1.5rem; font-size: 1rem; border-radius: 12px; font-weight: 700; background: linear-gradient(135deg, #8b5cf6, #7c3aed); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);">
+                            <i class="fas fa-check"></i> Actualizar Estado
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // NUEVA FUNCIÓN PARA CERRAR EL MODAL DE ESTADO
+        function cerrarModalEstado() {
+            const modal = document.getElementById('modal-cambiar-estado');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function cambiarEstadoMision(event, misionId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            formData.append('mision_id', misionId);
+
+            try {
+                const response = await fetch('api/update_estado_mision.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    agregarNotificacion('Estado Actualizado', `Estado de misión actualizado correctamente`);
+                    cerrarModalEstado();
+                    await cargarMisiones();
+                    alert('✅ Estado actualizado correctamente');
+                } else {
+                    alert('❌ ' + (data.message || 'Error al actualizar estado'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al actualizar estado');
+            }
+        }
+
+
+
+
+        ////// ----  //////
     </script>
 </body>
 
