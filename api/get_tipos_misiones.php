@@ -1,18 +1,28 @@
 <?php
-session_start();
 header('Content-Type: application/json');
+session_start();
 
-// Verificar autenticación
 if (!isset($_SESSION['usuario_id'])) {
-    echo json_encode(['success' => false, 'message' => 'No autorizado']);
+    http_response_code(401);
+    echo json_encode(['error' => 'No autenticado']);
     exit;
 }
 
 require_once '../conexion/db.php';
 
 try {
-    $sql = "SELECT * FROM tipos_misiones ORDER BY nombre ASC";
-    
+    $sql = "
+        SELECT 
+            id,
+            nombre,
+            descripcion,
+            color,
+            icono,
+            created_at
+        FROM tipos_misiones
+        ORDER BY id ASC
+    ";
+
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $tipos = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -20,6 +30,10 @@ try {
     echo json_encode($tipos);
 
 } catch (PDOException $e) {
-    error_log("Error en get_tipos_misiones.php: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error al obtener tipos de misiones: ' . $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'Error en la base de datos',
+        'message' => $e->getMessage()
+    ]);
 }
+?>

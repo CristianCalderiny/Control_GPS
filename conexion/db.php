@@ -1,7 +1,7 @@
 <?php
-$host = "localhost";
+$host = "127.0.0.1";
 $user = "root";
-$pass = "Ficopwd.18";
+$pass = "root";
 $db   = "forza_gps";
 
 try {
@@ -10,6 +10,5 @@ try {
     $conn->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     error_log("Error: " . $e->getMessage());
-    die(json_encode(["error" => true, "message" => "Error de conexión"]));
+    die(json_encode(["error" => true, "message" => $e->getMessage()]));
 }
-?>
