@@ -4518,7 +4518,6 @@ try {
         </div>
     </div>
     `;
-
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
