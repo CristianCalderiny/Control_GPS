@@ -3823,7 +3823,7 @@ try {
                 html += `<tr>
             <td>${mision.custodio_nombre || 'N/A'}</td>
             <td><span class="badge ${tipoClass}">${tipoTexto}</span></td>
-            <td>${mision.descripcion ? mision.descripcion.substring(0, 50) + '...' : '-'}</td>
+            <td>${(limpiarDescripcion(mision.descripcion) ? limpiarDescripcion(mision.descripcion).substring(0, 50) + '...' : '-')}</td>
             <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
             <td>${fechaInicio}</td>
             <td>${duracion} h</td>
@@ -3921,6 +3921,13 @@ try {
             });
         }
 
+        function limpiarDescripcion(texto) {
+            if (!texto) return '';
+            // Remover todas las etiquetas [Estado: ...] del texto
+            return texto.replace(/\s*\[Estado:\s*[^\]]+\]\s*/g, '').trim();
+        }
+
+
         // Actualizar estadísticas de misiones
         async function actualizarEstadisticasMisiones() {
             try {
@@ -3961,7 +3968,8 @@ try {
             }
         }
 
-        // Ver historial de custodio
+
+
         async function verHistorialCustodio(custodioId) {
             try {
                 const response = await fetch(`api/get_historial_custodio.php?custodio_id=${custodioId}`);
@@ -3969,12 +3977,6 @@ try {
 
                 if (data.custodio) {
                     const contenido = document.getElementById('historial-custodio-contenido');
-
-                    // Función para limpiar texto de etiquetas [Estado: ...]
-                    const limpiarTexto = (texto) => {
-                        if (!texto) return '';
-                        return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
-                    };
 
                     let html = `
                 <div style="margin-bottom: 2rem;">
@@ -4026,8 +4028,8 @@ try {
                                 estadoIcon = '📍';
                             }
 
-                            // Limpiar descripción
-                            const descripcionLimpia = limpiarTexto(mision.descripcion);
+                            // Limpiar descripción usando la función global
+                            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
 
                             html += `
                         <div class="mision-card" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 12px; border-left: 4px solid var(--primary);">
@@ -4093,11 +4095,9 @@ try {
             }
         }
 
-        // Ver detalles de misión
-
-        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO
-
-        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO Y CORREGIDO
+        // ========================================
+        // VER DETALLES DE MISIÓN
+        // ========================================
         function verDetallesMision(misionId) {
             const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
             if (!mision) return;
@@ -4190,16 +4190,10 @@ try {
             const prioridadKey = (mision.prioridad || 'media').toLowerCase();
             const prioridadColor = prioridadColors[prioridadKey] || prioridadColors['media'];
 
-            // Limpiar descripción y observaciones (remover etiquetas [Estado: ...])
-            const limpiarTexto = (texto) => {
-                if (!texto) return '';
-                // Remover todas las etiquetas [Estado: ...] del texto
-                return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
-            };
-
-            const descripcionLimpia = limpiarTexto(mision.descripcion);
-            const observacionesLimpias = limpiarTexto(mision.observaciones);
-            const observacionesFinalizacionLimpias = limpiarTexto(mision.observaciones_finalizacion);
+            // Usar la función global para limpiar descripción y observaciones
+            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
+            const observacionesLimpias = limpiarDescripcion(mision.observaciones);
+            const observacionesFinalizacionLimpias = limpiarDescripcion(mision.observaciones_finalizacion);
 
             const html = `
     <div class="modal active" id="modal-detalles-mision" style="display: flex !important; z-index: 10000;">
@@ -4368,7 +4362,9 @@ try {
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        // Función para cerrar el modal de detalles
+        // ========================================
+        // CERRAR MODAL DE DETALLES
+        // ========================================
         function cerrarModalDetalles() {
             const modal = document.getElementById('modal-detalles-mision');
             if (modal) {
@@ -4376,11 +4372,9 @@ try {
             }
         }
 
-
-
-
-
-        // Actualizar ícono de misión según tipo
+        // ========================================
+        // ACTUALIZAR ÍCONO DE MISIÓN SEGÚN TIPO
+        // ========================================
         function actualizarIconoMision(tipo) {
             const selectIcono = document.querySelector('#form-mision select[name="tipo_mision"]');
             if (!selectIcono) return;
@@ -4392,7 +4386,9 @@ try {
             }
         }
 
-        // Modificar el método cargarDatosDelServidor para incluir misiones
+        // ========================================
+        // MODIFICAR EL MÉTODO CARGAR DATOS DEL SERVIDOR
+        // ========================================
         const originalCargarDatosDelServidor = cargarDatosDelServidor;
         cargarDatosDelServidor = async function() {
             try {
@@ -4404,15 +4400,9 @@ try {
             }
         };
 
-        // Modal para cambiar estado
-
-
-
-        // Modal para cambiar estado - VERSIÓN CORREGIDA
-
-        // Modal para cambiar estado - VERSIÓN CORREGIDA CON VALIDACIONES
-
-        // Modal para cambiar estado - VERSIÓN CON ESTADOS DESHABILITADOS
+        // ========================================
+        // MODAL PARA CAMBIAR ESTADO
+        // ========================================
         function mostrarModalCambiarEstado(misionId, estadoActual) {
             const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
             if (!mision) return;
@@ -4451,6 +4441,9 @@ try {
                 return `<option value="${e.valor}" ${disabled}>${e.label}${textoAdicional}</option>`;
             }).join('');
 
+            // Limpiar descripción para mostrar en el modal
+            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
+
             let html = `
     <div class="modal active" id="modal-cambiar-estado" style="display: flex !important; z-index: 10000;">
         <div class="modal-content" style="max-width: 600px; margin: auto;">
@@ -4469,7 +4462,7 @@ try {
                         ${mision.custodio_nombre}
                     </p>
                     <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                        ${mision.descripcion ? mision.descripcion.substring(0, 80) + '...' : 'Sin descripción'}
+                        ${descripcionLimpia ? descripcionLimpia.substring(0, 80) + '...' : 'Sin descripción'}
                     </p>
                     <div style="display: inline-block; padding: 0.5rem 1rem; background: #fef3c7; color: #92400e; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
                         Estado actual: <strong>${estadoActual}</strong>
