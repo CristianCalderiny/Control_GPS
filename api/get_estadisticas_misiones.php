@@ -16,7 +16,7 @@ try {
         COUNT(*) as total_misiones,
         SUM(CASE WHEN tipo_mision = 'corta' THEN 1 ELSE 0 END) as misiones_cortas,
         SUM(CASE WHEN tipo_mision = 'larga' THEN 1 ELSE 0 END) as misiones_largas,
-        SUM(CASE WHEN estado IN ('pendiente', 'activa') THEN 1 ELSE 0 END) as misiones_activas
+        SUM(CASE WHEN estado IN ('posicionado', 'en_ruta') THEN 1 ELSE 0 END) as misiones_activas
     FROM misiones";
 
     $stmtStats = $conn->prepare($sqlStats);

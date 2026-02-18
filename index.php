@@ -2402,7 +2402,6 @@ try {
         </div>
     </div>
 
-
     <script>
         let sidebarCollapsed = false;
         let gpsDispositivos = [];
@@ -4542,10 +4541,6 @@ try {
             }
         }
 
-
-
-
-        ////// ----  //////
     </script>
 </body>
 
