@@ -3885,32 +3885,195 @@ try {
             }
         }
 
-        // Filtrar misiones por estado
+        // ========================================
+        // FILTRAR MISIONES POR ESTADO (CORREGIDO)
+        // ========================================
         function filtrarMisionesPorEstado(estado) {
+            console.log('Filtrando misiones por estado:', estado);
+            
             // Actualizar botones activos
             document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
             event.target.closest('.btn-tab').classList.add('active');
 
-            // Filtrar tabla
+            // Obtener la tabla
             const tbody = document.querySelector('#tabla-misiones tbody');
             const filas = tbody.querySelectorAll('tr');
 
-            filas.forEach(fila => {
+            console.log('Total de filas en tabla:', filas.length);
+
+            filas.forEach((fila, index) => {
+                // Obtener el badge de estado de la fila
+                const badges = fila.querySelectorAll('.badge');
+                let estadoMision = '';
+                
+                // Buscar el badge que contiene el estado (normalmente es el 4to badge)
+                for (let badge of badges) {
+                    const texto = badge.textContent.toLowerCase();
+                    if (texto.includes('posicionado') || texto.includes('en_ruta') || 
+                        texto.includes('en ruta') || texto.includes('finalizada') || 
+                        texto.includes('completada') || texto.includes('cancelada')) {
+                        estadoMision = texto;
+                        break;
+                    }
+                }
+
+                console.log(`Fila ${index}: estado="${estadoMision}"`);
+
+                // Mostrar/ocultar según filtro
                 if (estado === 'todas') {
                     fila.style.display = '';
-                } else {
-                    const badgeEstado = fila.querySelector('.badge');
-                    const estadoActual = badgeEstado ? badgeEstado.textContent.toLowerCase() : '';
-
-                    if (estado === 'en_progreso' && (estadoActual.includes('en_ruta') || estadoActual.includes('en curso'))) {
+                } 
+                else if (estado === 'en_progreso') {
+                    // Mostrar solo: posicionado, en_ruta
+                    if (estadoMision.includes('posicionado') || estadoMision.includes('en_ruta') || estadoMision.includes('en ruta')) {
                         fila.style.display = '';
-                    } else if (estado === 'completada' && estadoActual.includes('completada')) {
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                } 
+                else if (estado === 'completada') {
+                    // Mostrar solo: finalizada, completada
+                    if (estadoMision.includes('finalizada') || estadoMision.includes('completada')) {
                         fila.style.display = '';
                     } else {
                         fila.style.display = 'none';
                     }
                 }
             });
+        }
+
+        // ========================================
+        // ACTUALIZAR ESTADÍSTICAS INCLUYENDO FINALIZADAS
+        // ========================================
+        async function actualizarEstadisticasMisiones() {
+            try {
+                const response = await fetch('api/get_estadisticas_misiones.php');
+                const data = await response.json();
+
+                if (data.stats) {
+                    document.getElementById('stat-total-misiones').textContent = data.stats.total_misiones || 0;
+                    document.getElementById('stat-misiones-cortas').textContent = data.stats.misiones_cortas || 0;
+                    document.getElementById('stat-misiones-largas').textContent = data.stats.misiones_largas || 0;
+                    document.getElementById('stat-misiones-activas').textContent = data.stats.misiones_activas || 0;
+                }
+
+                // Contar misiones finalizadas localmente
+                if (Array.isArray(misiones)) {
+                    const finalizadas = misiones.filter(m => 
+                        m.estado === 'finalizada' || m.estado === 'completada'
+                    ).length;
+                    
+                    console.log('Misiones finalizadas calculadas:', finalizadas);
+                    
+                    // Si existe el elemento de finalizadas, actualizarlo
+                    const estatFinalizadas = document.getElementById('stat-misiones-finalizadas');
+                    if (estatFinalizadas) {
+                        estatFinalizadas.textContent = finalizadas;
+                    }
+                }
+
+                // Actualizar tabla de estadísticas por custodio
+                if (data.estadisticas_custodios) {
+                    const tbody = document.querySelector('#tabla-estadisticas-custodios tbody');
+                    if (tbody) {
+                        let html = '';
+                        data.estadisticas_custodios.forEach(custodio => {
+                            html += `<tr>
+                        <td>${custodio.nombre || '-'}</td>
+                        <td>${custodio.total_misiones || 0}</td>
+                        <td>${custodio.misiones_cortas || 0}</td>
+                        <td>${custodio.misiones_largas || 0}</td>
+                        <td>${custodio.horas_totales || 0} h</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="verHistorialCustodio(${custodio.id})" style="padding: 0.5rem 1rem;">
+                                <i class="fas fa-history"></i> Ver
+                            </button>
+                        </td>
+                    </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    }
+                }
+            } catch (error) {
+                console.error('Error actualizando estadísticas:', error);
+            }
+        }
+
+        // ========================================
+        // ACTUALIZAR TABLA DE MISIONES (MEJORADO)
+        // ========================================
+        function actualizarTablaMisiones() {
+            console.log('Actualizando tabla de misiones con:', misiones);
+            const tbody = document.querySelector('#tabla-misiones tbody');
+
+            if (!Array.isArray(misiones) || misiones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">
+            <div class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <h3>No hay misiones registradas</h3>
+                <p>Crea tu primera misión</p>
+            </div>
+        </td></tr>`;
+                return;
+            }
+
+            let html = '';
+            misiones.forEach(mision => {
+                // Determinar clase y texto del estado
+                let estadoClass = 'badge-secondary';
+                let estadoTexto = 'N/A';
+
+                const estadoNormalizado = (mision.estado || '').toLowerCase().trim();
+
+                if (estadoNormalizado === 'posicionado') {
+                    estadoClass = 'badge-warning';
+                    estadoTexto = '📍 Posicionado';
+                } 
+                else if (estadoNormalizado === 'en_ruta') {
+                    estadoClass = 'badge-danger';
+                    estadoTexto = '🚗 En Ruta';
+                } 
+                else if (estadoNormalizado === 'finalizada') {
+                    estadoClass = 'badge-success';
+                    estadoTexto = '✅ Finalizada';
+                } 
+                else if (estadoNormalizado === 'completada') {
+                    estadoClass = 'badge-success';
+                    estadoTexto = '✅ Completada';
+                } 
+                else if (estadoNormalizado === 'cancelada') {
+                    estadoClass = 'badge-danger';
+                    estadoTexto = '❌ Cancelada';
+                }
+
+                const tipoClass = mision.tipo_mision === 'corta' ? 'badge-mision-corta' : 'badge-mision-larga';
+                const tipoTexto = mision.tipo_mision === 'corta' ? '⚡ Corta' : '🏔️ Larga';
+
+                const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
+                const duracion = mision.duracion_real || mision.duracion_estimada || '-';
+
+                html += `<tr>
+            <td>${mision.custodio_nombre || 'N/A'}</td>
+            <td><span class="badge ${tipoClass}">${tipoTexto}</span></td>
+            <td>${(limpiarDescripcion(mision.descripcion) ? limpiarDescripcion(mision.descripcion).substring(0, 50) + '...' : '-')}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+            <td>${fechaInicio}</td>
+            <td>${duracion} h</td>
+            <td>
+                <div class="btn-group" style="gap: 0.25rem; flex-wrap: wrap;">
+                    ${mision.estado !== 'completada' && mision.estado !== 'cancelada' && mision.estado !== 'finalizada' ? `
+                        <button class="btn" onclick="mostrarModalCambiarEstado(${mision.id}, '${mision.estado}')" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #8b5cf6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                            <i class="fas fa-edit"></i> Estado
+                        </button>
+                    ` : ''}
+                    <button class="btn" onclick="verDetallesMision(${mision.id})" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #3b82f6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+            });
+            tbody.innerHTML = html;
         }
 
         // Filtrar tabla de misiones por búsqueda
@@ -4402,8 +4565,7 @@ try {
             const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
             if (!mision) return;
 
-            const estados = [
-                {
+            const estados = [{
                     valor: 'posicionado',
                     label: '📍 Posicionado'
                 },
@@ -4514,33 +4676,25 @@ try {
             }
         }
 
-        async function cambiarEstadoMision(event, misionId) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            formData.append('mision_id', misionId);
+        function calcularDuracionMision(misionId, nuevoEstado) {
+            const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
+            if (!mision) return null;
 
-            try {
-                const response = await fetch('api/update_estado_mision.php', {
-                    method: 'POST',
-                    body: formData
-                });
+            const fechaInicio = new Date(mision.fecha_inicio);
+            const ahora = new Date();
 
-                const data = await response.json();
+            const diferencia = ahora - fechaInicio;
+            const horas = Math.floor(diferencia / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const duracionDecimal = horas + (minutos / 60);
 
-                if (data.success) {
-                    agregarNotificacion('Estado Actualizado', `Estado de misión actualizado correctamente`);
-                    cerrarModalEstado();
-                    await cargarMisiones();
-                    alert('✅ Estado actualizado correctamente');
-                } else {
-                    alert('❌ ' + (data.message || 'Error al actualizar estado'));
-                }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('❌ Error al actualizar estado');
-            }
+            return {
+                horas: horas,
+                minutos: minutos,
+                duracionDecimal: duracionDecimal.toFixed(2),
+                duracionFormato: `${horas}h ${minutos}m`
+            };
         }
-
     </script>
 </body>
 
