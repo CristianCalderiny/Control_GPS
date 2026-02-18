@@ -20,12 +20,15 @@ try {
         m.fecha_fin,
         m.observaciones,
         m.estado,
+        m.duracion_real,
         c.nombre as custodio_nombre,
         COALESCE(g.imei, '') as gps_imei
     FROM misiones m
     LEFT JOIN custodios c ON m.custodio_id = c.id
     LEFT JOIN gps_dispositivos g ON m.gps_id = g.id
     ORDER BY m.fecha_inicio DESC";
+
+
 
     $stmt = $conn->prepare($sql);
     $stmt->execute();
@@ -39,14 +42,21 @@ try {
         $mision['codigo_mision'] = 'MIS-' . strtoupper($tipo[0]) . '-' . $mision['id'];
         $mision['descripcion'] = $mision['observaciones'];
         $mision['duracion_estimada'] = ($tipo === 'corta') ? 4 : 8;
-        $mision['duracion_real'] = null;
+        if (!empty($mision['duracion_real']) && $mision['duracion_real'] > 0) {
+            $mision['duracion_real'] = round($mision['duracion_real'], 2);
+        } elseif (!empty($mision['fecha_fin'])) {
+            $inicio = new DateTime($mision['fecha_inicio']);
+            $fin = new DateTime($mision['fecha_fin']);
+            $mision['duracion_real'] = round(($fin->getTimestamp() - $inicio->getTimestamp()) / 3600, 2);
+        } else {
+            $mision['duracion_real'] = null;
+        }
         $mision['prioridad'] = 'media';
         $mision['observaciones_finalizacion'] = null;
     }
 
     echo json_encode($misiones);
     exit;
-
 } catch (PDOException $e) {
     error_log("Error en get_misiones.php: " . $e->getMessage());
     http_response_code(500);
@@ -58,4 +68,3 @@ try {
     echo json_encode([]);
     exit;
 }
-?>

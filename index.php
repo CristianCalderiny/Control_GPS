@@ -2240,6 +2240,8 @@ try {
                         </div>
                     </div>
 
+
+                    
                     <!-- SECCIÓN 2: DESCRIPCIÓN Y DETALLES -->
                     <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
                         <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -3818,7 +3820,7 @@ try {
                 const tipoTexto = mision.tipo_mision === 'corta' ? '⚡ Corta' : '🏔️ Larga';
 
                 const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
-                const duracion = mision.duracion_real || mision.duracion_estimada || '-';
+                const duracion = (mision.duracion_real && mision.duracion_real > 0) ? mision.duracion_real : '-';
 
                 html += `<tr>
             <td>${mision.custodio_nombre || 'N/A'}</td>
@@ -4472,7 +4474,7 @@ try {
                             </p>
                         </div>
                         <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
-                            ${mision.duracion_real || '0'} horas
+                            ${(mision.duracion_real && mision.duracion_real > 0) ? mision.duracion_real + ' horas' : '<span style="color: #94a3b8; font-size: 0.85rem;">Sin completar</span>'}
                         </p>
                     </div>
                     
