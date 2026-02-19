@@ -2241,7 +2241,7 @@ try {
                     </div>
 
 
-                    
+
                     <!-- SECCIÓN 2: DESCRIPCIÓN Y DETALLES -->
                     <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
                         <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--success); text-transform: uppercase; letter-spacing: 0.5px;">
@@ -3892,7 +3892,7 @@ try {
         // ========================================
         function filtrarMisionesPorEstado(estado) {
             console.log('Filtrando misiones por estado:', estado);
-            
+
             // Actualizar botones activos
             document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
             event.target.closest('.btn-tab').classList.add('active');
@@ -3907,12 +3907,12 @@ try {
                 // Obtener el badge de estado de la fila
                 const badges = fila.querySelectorAll('.badge');
                 let estadoMision = '';
-                
+
                 // Buscar el badge que contiene el estado (normalmente es el 4to badge)
                 for (let badge of badges) {
                     const texto = badge.textContent.toLowerCase();
-                    if (texto.includes('posicionado') || texto.includes('en_ruta') || 
-                        texto.includes('en ruta') || texto.includes('finalizada') || 
+                    if (texto.includes('posicionado') || texto.includes('en_ruta') ||
+                        texto.includes('en ruta') || texto.includes('finalizada') ||
                         texto.includes('completada') || texto.includes('cancelada')) {
                         estadoMision = texto;
                         break;
@@ -3924,16 +3924,14 @@ try {
                 // Mostrar/ocultar según filtro
                 if (estado === 'todas') {
                     fila.style.display = '';
-                } 
-                else if (estado === 'en_progreso') {
+                } else if (estado === 'en_progreso') {
                     // Mostrar solo: posicionado, en_ruta
                     if (estadoMision.includes('posicionado') || estadoMision.includes('en_ruta') || estadoMision.includes('en ruta')) {
                         fila.style.display = '';
                     } else {
                         fila.style.display = 'none';
                     }
-                } 
-                else if (estado === 'completada') {
+                } else if (estado === 'completada') {
                     // Mostrar solo: finalizada, completada
                     if (estadoMision.includes('finalizada') || estadoMision.includes('completada')) {
                         fila.style.display = '';
@@ -3961,12 +3959,12 @@ try {
 
                 // Contar misiones finalizadas localmente
                 if (Array.isArray(misiones)) {
-                    const finalizadas = misiones.filter(m => 
+                    const finalizadas = misiones.filter(m =>
                         m.estado === 'finalizada' || m.estado === 'completada'
                     ).length;
-                    
+
                     console.log('Misiones finalizadas calculadas:', finalizadas);
-                    
+
                     // Si existe el elemento de finalizadas, actualizarlo
                     const estatFinalizadas = document.getElementById('stat-misiones-finalizadas');
                     if (estatFinalizadas) {
@@ -4030,20 +4028,16 @@ try {
                 if (estadoNormalizado === 'posicionado') {
                     estadoClass = 'badge-warning';
                     estadoTexto = '📍 Posicionado';
-                } 
-                else if (estadoNormalizado === 'en_ruta') {
+                } else if (estadoNormalizado === 'en_ruta') {
                     estadoClass = 'badge-danger';
                     estadoTexto = '🚗 En Ruta';
-                } 
-                else if (estadoNormalizado === 'finalizada') {
+                } else if (estadoNormalizado === 'finalizada') {
                     estadoClass = 'badge-success';
                     estadoTexto = '✅ Finalizada';
-                } 
-                else if (estadoNormalizado === 'completada') {
+                } else if (estadoNormalizado === 'completada') {
                     estadoClass = 'badge-success';
                     estadoTexto = '✅ Completada';
-                } 
-                else if (estadoNormalizado === 'cancelada') {
+                } else if (estadoNormalizado === 'cancelada') {
                     estadoClass = 'badge-danger';
                     estadoTexto = '❌ Cancelada';
                 }
@@ -4696,6 +4690,47 @@ try {
                 duracionDecimal: duracionDecimal.toFixed(2),
                 duracionFormato: `${horas}h ${minutos}m`
             };
+        }
+
+
+        async function cambiarEstadoMision(event, misionId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            formData.append('mision_id', misionId);
+
+            const nuevoEstado = formData.get('nuevo_estado');
+            if (!nuevoEstado) {
+                alert('❌ Por favor selecciona un nuevo estado');
+                return;
+            }
+
+            try {
+                const response = await fetch('api/update_estado_mision.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const texto = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(texto);
+                } catch (e) {
+                    alert('Error del servidor: ' + texto.substring(0, 200));
+                    return;
+                }
+
+                if (data.success) {
+                    agregarNotificacion('Estado Actualizado', `Misión actualizada a: ${nuevoEstado}`);
+                    cerrarModalEstado();
+                    await cargarMisiones();
+                    alert('✅ Estado actualizado correctamente');
+                } else {
+                    alert('❌ ' + (data.message || 'Error al actualizar estado'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al actualizar estado: ' + error.message);
+            }
         }
     </script>
 </body>
