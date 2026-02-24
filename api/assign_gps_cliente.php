@@ -14,6 +14,7 @@ try {
     // Obtener datos del formulario
     $gpsId = $_POST['gpsIdCliente'] ?? null;
     $clienteNombre = $_POST['clienteNombre'] ?? null;
+    $telefono = $_POST['telefono'] ?? null;
     $piloto = $_POST['piloto'] ?? null;
     $placa = $_POST['placa'] ?? null;
     $contenedor = $_POST['contenedor'] ?? null;
@@ -59,15 +60,16 @@ try {
 
     // Insertar en tabla de asignaciones por cliente
     $stmtInsert = $conn->prepare("
-        INSERT INTO asignaciones_cliente_gps 
-        (gps_id, cliente, piloto, placa, contenedor, origen, destino, observaciones, 
-         fecha_asignacion, estado, usuario_asigno_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'asignado', ?)
-    ");
+    INSERT INTO asignaciones_cliente_gps 
+    (gps_id, cliente, telefono, piloto, placa, contenedor, origen, destino, observaciones, 
+     fecha_asignacion, estado, usuario_asigno_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'asignado', ?)
+");
 
     $stmtInsert->execute([
         $gpsId,
         $clienteNombre,
+        $telefono ?: null,
         $piloto ?: null,
         $placa ?: null,
         $contenedor ?: null,
@@ -109,12 +111,11 @@ try {
         'message' => 'GPS asignado correctamente al cliente',
         'asignacion_id' => $asignacionId
     ]);
-
 } catch (Exception $e) {
     if ($conn->inTransaction()) {
         $conn->rollBack();
     }
-    
+
     http_response_code(400);
     echo json_encode([
         'success' => false,

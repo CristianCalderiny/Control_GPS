@@ -15,6 +15,7 @@ try {
             ac.id,
             ac.gps_id,
             ac.cliente,
+            ac.telefono,
             ac.piloto,
             ac.placa,
             ac.contenedor,

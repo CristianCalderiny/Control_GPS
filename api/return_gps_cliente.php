@@ -1,21 +1,32 @@
 <?php
+/**
+ * API para retornar GPS asignados a CLIENTES
+ * Maneja la devolución de equipos GPS de transporte/clientes
+ */
+
 header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
-
 session_start();
 
-// Log para debug
-$log_file = __DIR__ . '/logs/return_gps_cliente.log';
-@mkdir(dirname($log_file), 0755, true);
-
-function escribir_log($mensaje) {
-    global $log_file;
-    file_put_contents($log_file, date('[Y-m-d H:i:s] ') . $mensaje . "\n", FILE_APPEND);
+// ========== FUNCIÓN DE LOGGING ==========
+function escribir_log($mensaje)
+{
+    $log_dir = __DIR__ . '/logs';
+    $log_file = $log_dir . '/return_gps_cliente.log';
+    
+    if (!is_dir($log_dir)) {
+        @mkdir($log_dir, 0755, true);
+    }
+    
+    $timestamp = date('[Y-m-d H:i:s] ');
+    @file_put_contents($log_file, $timestamp . $mensaje . "\n", FILE_APPEND);
 }
 
+// ========== INICIO ==========
 escribir_log("=== INICIO RETORNO GPS CLIENTE ===");
 
+// ========== VALIDAR SESIÓN ==========
 if (!isset($_SESSION['usuario_id'])) {
     escribir_log("ERROR: No autenticado");
     http_response_code(401);
@@ -26,21 +37,23 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once __DIR__ . '/../conexion/db.php';
 
 try {
-    $asignacionId = $_POST['asignacionId'] ?? null;
-    $fechaRetorno = $_POST['fechaRetorno'] ?? null;
-    $estadoGPS = $_POST['estadoGPS'] ?? null;
-    $observacionesRetorno = $_POST['observacionesRetorno'] ?? null;
+    // ========== OBTENER PARÁMETROS ==========
+    $asignacionId = isset($_POST['asignacionId']) ? intval($_POST['asignacionId']) : null;
+    $fechaRetorno = isset($_POST['fechaRetorno']) ? trim($_POST['fechaRetorno']) : null;
+    $estadoGPS = isset($_POST['estadoGPS']) ? trim($_POST['estadoGPS']) : null;
+    $observacionesRetorno = isset($_POST['observacionesRetorno']) ? trim($_POST['observacionesRetorno']) : '';
 
     escribir_log("Datos recibidos: asignacionId=$asignacionId, fecha=$fechaRetorno, estado=$estadoGPS");
 
-    // VALIDACIÓN 1: DATOS OBLIGATORIOS
-    if (!$asignacionId || !$fechaRetorno || !$estadoGPS) {
+    // ========== VALIDACIÓN: DATOS OBLIGATORIOS ==========
+    if (empty($asignacionId) || empty($fechaRetorno) || empty($estadoGPS)) {
         escribir_log("ERROR: Faltan datos obligatorios");
+        http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Faltan datos obligatorios']);
         exit;
     }
 
-    // VALIDACIÓN 2: OBTENER ASIGNACIÓN
+    // ========== OBTENER ASIGNACIÓN ==========
     $sqlAsignacion = "
         SELECT 
             a.id, a.gps_id, a.custodio_id, a.cliente, a.piloto, a.placa, 
@@ -49,138 +62,156 @@ try {
             g.imei, g.marca, g.modelo
         FROM asignaciones_gps a
         INNER JOIN gps_dispositivos g ON a.gps_id = g.id
-        WHERE a.id = ? AND a.estado = 'asignado'
+        WHERE a.id = :asignacion_id AND a.estado = 'asignado'
     ";
 
     $stmt = $conn->prepare($sqlAsignacion);
     if (!$stmt) {
-        escribir_log("ERROR al preparar SQL: " . $conn->error);
-        echo json_encode(['success' => false, 'message' => 'Error en BD']);
-        exit;
+        throw new Exception("Error preparando consulta: " . implode(", ", $conn->errorInfo()));
     }
 
-    $stmt->bind_param("i", $asignacionId);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $asignacion = $result->fetch_assoc();
+    $stmt->execute([':asignacion_id' => $asignacionId]);
+    $asignacion = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$asignacion) {
-        escribir_log("ERROR: Asignación no encontrada o ya retornada. ID: $asignacionId");
+        escribir_log("ERROR: Asignación no encontrada. ID: $asignacionId");
+        http_response_code(404);
         echo json_encode(['success' => false, 'message' => 'Asignación no encontrada o ya ha sido retornada']);
         exit;
     }
 
-    // VALIDAR QUE SEA ASIGNACIÓN A CLIENTE
-    if ($asignacion['tipo_asignacion'] !== 'cliente') {
-        escribir_log("ERROR: No es asignación a cliente. Tipo: " . $asignacion['tipo_asignacion']);
-        echo json_encode(['success' => false, 'message' => 'Esta asignación es a CUSTODIO, no a cliente']);
+    // ========== VALIDAR TIPO DE ASIGNACIÓN ==========
+    // ✅ CORREGIDO: Ahora acepta AMBOS tipos (cliente y custodio)
+    $tipoAsignacion = strtolower(trim($asignacion['tipo_asignacion']));
+    
+    if (!in_array($tipoAsignacion, ['cliente', 'custodio'])) {
+        escribir_log("ERROR: Tipo de asignación inválido. Tipo: " . $asignacion['tipo_asignacion']);
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Tipo de asignación inválido']);
         exit;
     }
 
-    escribir_log("Asignación encontrada: " . json_encode($asignacion));
+    escribir_log("✓ Asignación encontrada: IMEI=" . $asignacion['imei'] . ", Cliente=" . $asignacion['cliente'] . ", Tipo=" . $tipoAsignacion);
 
-    // INICIAR TRANSACCIÓN
-    $conn->begin_transaction();
-
-    try {
-        // ACTUALIZAR ASIGNACIÓN
-        $sqlUpdate = "
-            UPDATE asignaciones_gps 
-            SET 
-                estado = 'retornado',
-                fecha_retorno = ?,
-                estado_gps_retorno = ?,
-                observaciones_retorno = ?
-            WHERE id = ?
-        ";
-
-        $stmtUpdate = $conn->prepare($sqlUpdate);
-        if (!$stmtUpdate) {
-            throw new Exception("Error preparando UPDATE: " . $conn->error);
-        }
-
-        $stmtUpdate->bind_param("sssi", $fechaRetorno, $estadoGPS, $observacionesRetorno, $asignacionId);
-        
-        if (!$stmtUpdate->execute()) {
-            throw new Exception("Error ejecutando UPDATE: " . $stmtUpdate->error);
-        }
-
-        escribir_log("✓ Asignación actualizada a 'retornado'");
-
-        // ACTUALIZAR GPS A DISPONIBLE
-        $sqlGPS = "UPDATE gps_dispositivos SET estado = 'disponible' WHERE id = ?";
-        $stmtGPS = $conn->prepare($sqlGPS);
-        $stmtGPS->bind_param("i", $asignacion['gps_id']);
-        
-        if (!$stmtGPS->execute()) {
-            throw new Exception("Error actualizando GPS: " . $stmtGPS->error);
-        }
-
-        escribir_log("✓ GPS actualizado a 'disponible'");
-
-        // REGISTRAR EN HISTORIAL (CON CAMPOS DE CLIENTE)
-        $sqlHistorial = "
-            INSERT INTO historial_retornos 
-            (asignacion_id, gps_id, custodio_id, cliente, piloto, placa, contenedor, 
-             origen, destino, fecha_retorno, estado_gps, observaciones, usuario_id, tipo_asignacion)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'cliente')
-        ";
-
-        $stmtHistorial = $conn->prepare($sqlHistorial);
-        if (!$stmtHistorial) {
-            throw new Exception("Error preparando historial: " . $conn->error);
-        }
-
-        $stmtHistorial->bind_param(
-            "iissssssssssi",
-            $asignacionId,
-            $asignacion['gps_id'],
-            $asignacion['custodio_id'],
-            $asignacion['cliente'],
-            $asignacion['piloto'],
-            $asignacion['placa'],
-            $asignacion['contenedor'],
-            $asignacion['origen'],
-            $asignacion['destino'],
-            $fechaRetorno,
-            $estadoGPS,
-            $observacionesRetorno,
-            $_SESSION['usuario_id']
-        );
-
-        if (!$stmtHistorial->execute()) {
-            throw new Exception("Error insertando historial: " . $stmtHistorial->error);
-        }
-
-        escribir_log("✓ Historial registrado");
-
-        // CONFIRMAR TRANSACCIÓN
-        $conn->commit();
-
-        escribir_log("✅ RETORNO EXITOSO");
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'GPS retornado correctamente',
-            'datos' => [
-                'imei' => $asignacion['imei'],
-                'cliente' => $asignacion['cliente'],
-                'piloto' => $asignacion['piloto'],
-                'placa' => $asignacion['placa'],
-                'fecha_retorno' => $fechaRetorno,
-                'estado' => $estadoGPS
-            ]
-        ]);
-
-    } catch (Exception $e) {
-        $conn->rollback();
-        escribir_log("❌ ERROR EN TRANSACCIÓN: " . $e->getMessage());
-        echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
+    // ========== INICIAR TRANSACCIÓN ==========
+    if (!$conn->beginTransaction()) {
+        throw new Exception("Error iniciando transacción");
     }
 
-} catch (Exception $e) {
-    escribir_log("❌ ERROR GENERAL: " . $e->getMessage());
-    echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
-}
+    // ========== 1. ACTUALIZAR ASIGNACIÓN ==========
+    $sqlUpdate = "
+        UPDATE asignaciones_gps 
+        SET 
+            estado = 'retornado',
+            fecha_retorno = :fecha_retorno,
+            estado_gps_retorno = :estado_gps,
+            observaciones_retorno = :observaciones
+        WHERE id = :asignacion_id
+    ";
 
+    $stmtUpdate = $conn->prepare($sqlUpdate);
+    if (!$stmtUpdate) {
+        throw new Exception("Error preparando UPDATE asignacion");
+    }
+
+    $stmtUpdate->execute([
+        ':fecha_retorno' => $fechaRetorno,
+        ':estado_gps' => $estadoGPS,
+        ':observaciones' => $observacionesRetorno,
+        ':asignacion_id' => $asignacionId
+    ]);
+
+    escribir_log("✓ Asignación actualizada a 'retornado'");
+
+    // ========== 2. ACTUALIZAR GPS ==========
+    $gpsId = intval($asignacion['gps_id']);
+    $sqlGPS = "UPDATE gps_dispositivos SET estado = 'disponible' WHERE id = :gps_id";
+    
+    $stmtGPS = $conn->prepare($sqlGPS);
+    if (!$stmtGPS) {
+        throw new Exception("Error preparando UPDATE GPS");
+    }
+
+    $stmtGPS->execute([':gps_id' => $gpsId]);
+    escribir_log("✓ GPS actualizado a 'disponible'");
+
+    // ========== 3. REGISTRAR EN HISTORIAL ==========
+    $sqlHistorial = "
+        INSERT INTO historial_retornos 
+        (asignacion_id, gps_id, custodio_id, cliente, piloto, placa, contenedor, 
+         origen, destino, fecha_retorno, estado_gps, observaciones, usuario_id, tipo_asignacion)
+        VALUES (:asignacion_id, :gps_id, :custodio_id, :cliente, :piloto, :placa, :contenedor, 
+                :origen, :destino, :fecha_retorno, :estado_gps, :observaciones, :usuario_id, :tipo_asignacion)
+    ";
+
+    $stmtHistorial = $conn->prepare($sqlHistorial);
+    if (!$stmtHistorial) {
+        throw new Exception("Error preparando INSERT historial");
+    }
+
+    $custodio_id = !empty($asignacion['custodio_id']) ? intval($asignacion['custodio_id']) : null;
+    $usuario_id = intval($_SESSION['usuario_id']);
+    
+    $stmtHistorial->execute([
+        ':asignacion_id' => intval($asignacion['id']),
+        ':gps_id' => $gpsId,
+        ':custodio_id' => $custodio_id,
+        ':cliente' => $asignacion['cliente'],
+        ':piloto' => !empty($asignacion['piloto']) ? $asignacion['piloto'] : null,
+        ':placa' => !empty($asignacion['placa']) ? $asignacion['placa'] : null,
+        ':contenedor' => !empty($asignacion['contenedor']) ? $asignacion['contenedor'] : null,
+        ':origen' => $asignacion['origen'],
+        ':destino' => $asignacion['destino'],
+        ':fecha_retorno' => $fechaRetorno,
+        ':estado_gps' => $estadoGPS,
+        ':observaciones' => $observacionesRetorno,
+        ':usuario_id' => $usuario_id,
+        ':tipo_asignacion' => $tipoAsignacion
+    ]);
+
+    escribir_log("✓ Historial registrado");
+
+    // ========== CONFIRMAR TRANSACCIÓN ==========
+    if (!$conn->commit()) {
+        throw new Exception("Error confirmando transacción");
+    }
+
+    escribir_log("✅ RETORNO EXITOSO - GPS: " . $asignacion['imei']);
+
+    // ========== RESPUESTA EXITOSA ==========
+    http_response_code(200);
+    echo json_encode([
+        'success' => true,
+        'message' => 'GPS retornado correctamente',
+        'datos' => [
+            'imei' => $asignacion['imei'],
+            'cliente' => $asignacion['cliente'],
+            'piloto' => $asignacion['piloto'] ?? 'N/A',
+            'placa' => $asignacion['placa'] ?? 'N/A',
+            'fecha_retorno' => $fechaRetorno,
+            'estado' => $estadoGPS
+        ]
+    ]);
+
+} catch (Exception $e) {
+    
+    // ========== ROLLBACK EN CASO DE ERROR ==========
+    if (isset($conn) && $conn) {
+        try {
+            $conn->rollBack();
+        } catch (Exception $rollbackError) {
+            escribir_log("⚠️ Error en rollback: " . $rollbackError->getMessage());
+        }
+    }
+    
+    $errorMsg = $e->getMessage();
+    escribir_log("❌ ERROR: " . $errorMsg);
+    
+    // ========== RESPUESTA DE ERROR ==========
+    http_response_code(500);
+    echo json_encode([
+        'success' => false, 
+        'message' => 'Error al procesar retorno: ' . $errorMsg
+    ]);
+}
 ?>
