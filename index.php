@@ -1782,7 +1782,7 @@ try {
                                 <th>Modelo</th>
                                 <th>Estado</th>
                                 <th>Ubicación</th>
-                                <th>Custodio</th>
+                                <th>Custodio / Cliente</th>
                                 <th>Acciones</th>
                             </tr>
                         </thead>
@@ -1934,6 +1934,7 @@ try {
                                 <p id="info-gps-cliente" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;"></p>
                             </div>
                             <div class="form-group">
+
                                 <label class="form-label"><i class="fas fa-building"></i> Cliente <span style="color: var(--danger);">*</span></label>
                                 <input type="text" class="form-input" name="clienteNombre" placeholder="Ej: Transportes XYZ, DHL Honduras" required>
                             </div>
@@ -2006,311 +2007,311 @@ try {
                     </div>
                 </form>
             </div>
-          </div>
+        </div>
 
-            <!-- RETORNAR GPS -->
-            <div id="module-retornar" class="module-content hidden">
-                <div class="content-header">
-                    <h2>Retornar GPS</h2>
-                    <p>Registra la devolución de un equipo GPS</p>
+        <!-- RETORNAR GPS -->
+        <div id="module-retornar" class="module-content hidden">
+            <div class="content-header">
+                <h2>Retornar GPS</h2>
+                <p>Registra la devolución de un equipo GPS</p>
+            </div>
+            <div class="form-card">
+                <div class="form-header">
+                    <h3>🔄 Retorno de GPS</h3>
                 </div>
-                <div class="form-card">
-                    <div class="form-header">
-                        <h3>🔄 Retorno de GPS</h3>
+                <form id="form-retornar" onsubmit="retornarGPS(event)">
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📡 Seleccionar GPS a Retornar</h4>
+                        <div class="form-group">
+                            <label class="form-label"><i class="fas fa-satellite-dish"></i> GPS Asignado</label>
+                            <select class="form-select" name="asignacionId" required onchange="mostrarInfoRetorno(this.value)">
+                                <option value="">Seleccione GPS a retornar</option>
+                            </select>
+                        </div>
                     </div>
-                    <form id="form-retornar" onsubmit="retornarGPS(event)">
-                        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📡 Seleccionar GPS a Retornar</h4>
+
+                    <!-- BLOQUE DE INFO DINÁMICO PARA CUSTODIO -->
+                    <div id="info-retorno-custodio" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid var(--info);">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.75rem;">ℹ️ Información de la Asignación (CUSTODIO)</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">GPS (IMEI)</p>
+                                <p id="retorno-imei-custodio" style="font-family: monospace; font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Cliente</p>
+                                <p id="retorno-cliente-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Custodio</p>
+                                <p id="retorno-custodio-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Días Asignado</p>
+                                <p id="retorno-dias-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE DE INFO DINÁMICO PARA CLIENTE -->
+                    <div id="info-retorno-cliente" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid #3b82f6;">
+                        <p style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 600; margin-bottom: 1rem;">ℹ️ Información de la Asignación (CLIENTE/TRANSPORTE)</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">GPS (IMEI)</p>
+                                <p id="retorno-imei-cliente" style="font-family: monospace; font-weight: 700; word-break: break-all;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CLIENTE</p>
+                                <p id="retorno-cliente-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PILOTO</p>
+                                <p id="retorno-piloto-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PLACA</p>
+                                <p id="retorno-placa-cliente" style="font-family: monospace; font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">ORIGEN</p>
+                                <p id="retorno-origen-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DESTINO</p>
+                                <p id="retorno-destino-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CONTENEDOR</p>
+                                <p id="retorno-contenedor-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DÍAS ASIGNADO</p>
+                                <p id="retorno-dias-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📅 Retorno</h4>
+                        <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label"><i class="fas fa-satellite-dish"></i> GPS Asignado</label>
-                                <select class="form-select" name="asignacionId" required onchange="mostrarInfoRetorno(this.value)">
-                                    <option value="">Seleccione GPS a retornar</option>
+                                <label class="form-label"><i class="fas fa-calendar"></i> Fecha y Hora de Retorno</label>
+                                <input type="datetime-local" class="form-input" name="fechaRetorno" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-clipboard-check"></i> Estado del GPS al Retornar</label>
+                                <select class="form-select" name="estadoGPS" required>
+                                    <option value="">Seleccione estado</option>
+                                    <option value="perfecto">✅ Perfecto Estado</option>
+                                    <option value="bueno">👍 Buen Estado</option>
+                                    <option value="regular">⚠️ Estado Regular</option>
+                                    <option value="dañado">❌ Dañado - Requiere Reparación</option>
                                 </select>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- BLOQUE DE INFO DINÁMICO PARA CUSTODIO -->
-                        <div id="info-retorno-custodio" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid var(--info);">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.75rem;">ℹ️ Información de la Asignación (CUSTODIO)</p>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">GPS (IMEI)</p>
-                                    <p id="retorno-imei-custodio" style="font-family: monospace; font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Cliente</p>
-                                    <p id="retorno-cliente-custodio" style="font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Custodio</p>
-                                    <p id="retorno-custodio-custodio" style="font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Días Asignado</p>
-                                    <p id="retorno-dias-custodio" style="font-weight: 700;">-</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- BLOQUE DE INFO DINÁMICO PARA CLIENTE -->
-                        <div id="info-retorno-cliente" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid #3b82f6;">
-                            <p style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 600; margin-bottom: 1rem;">ℹ️ Información de la Asignación (CLIENTE/TRANSPORTE)</p>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">GPS (IMEI)</p>
-                                    <p id="retorno-imei-cliente" style="font-family: monospace; font-weight: 700; word-break: break-all;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CLIENTE</p>
-                                    <p id="retorno-cliente-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PILOTO</p>
-                                    <p id="retorno-piloto-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PLACA</p>
-                                    <p id="retorno-placa-cliente" style="font-family: monospace; font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">ORIGEN</p>
-                                    <p id="retorno-origen-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DESTINO</p>
-                                    <p id="retorno-destino-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CONTENEDOR</p>
-                                    <p id="retorno-contenedor-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
-                                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DÍAS ASIGNADO</p>
-                                    <p id="retorno-dias-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
-                            <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📅 Retorno</h4>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label class="form-label"><i class="fas fa-calendar"></i> Fecha y Hora de Retorno</label>
-                                    <input type="datetime-local" class="form-input" name="fechaRetorno" required>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label"><i class="fas fa-clipboard-check"></i> Estado del GPS al Retornar</label>
-                                    <select class="form-select" name="estadoGPS" required>
-                                        <option value="">Seleccione estado</option>
-                                        <option value="perfecto">✅ Perfecto Estado</option>
-                                        <option value="bueno">👍 Buen Estado</option>
-                                        <option value="regular">⚠️ Estado Regular</option>
-                                        <option value="dañado">❌ Dañado - Requiere Reparación</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label"><i class="fas fa-comment"></i> Observaciones del Retorno</label>
-                            <textarea class="form-textarea" name="observacionesRetorno" placeholder="Describa el estado del GPS, daños encontrados, novedades, etc..."></textarea>
-                        </div>
-
-                        <div style="display: flex; gap: 1rem;">
-                            <button type="reset" class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1rem;">
-                                <i class="fas fa-redo"></i> Limpiar
-                            </button>
-                            <button type="submit" class="btn btn-success" style="flex: 1; padding: 1rem; font-size: 1rem;">
-                                <i class="fas fa-check-circle"></i> Registrar Retorno
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- CONSULTAR GPS -->
-            <div id="module-consulta" class="module-content hidden">
-                <div class="content-header">
-                    <h2>Consultar Estado de GPS</h2>
-                    <p>Busca información completa sobre un GPS</p>
-                </div>
-
-                <div class="card" style="max-width: 600px;">
                     <div class="form-group">
-                        <label class="form-label">
-                            <i class="fas fa-search"></i> IMEI / Número de Serie
-                        </label>
-                        <div class="flex gap-2">
-                            <input type="text" class="form-input" id="buscar-imei-consulta" placeholder="Ingrese IMEI del GPS">
-                            <button type="button" class="btn btn-primary" onclick="consultarGPS()">
-                                <i class="fas fa-search"></i> Buscar
-                            </button>
-                        </div>
+                        <label class="form-label"><i class="fas fa-comment"></i> Observaciones del Retorno</label>
+                        <textarea class="form-textarea" name="observacionesRetorno" placeholder="Describa el estado del GPS, daños encontrados, novedades, etc..."></textarea>
                     </div>
-                </div>
 
-                <div id="resultado-consulta" class="hidden"></div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="reset" class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-redo"></i> Limpiar
+                        </button>
+                        <button type="submit" class="btn btn-success" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-check-circle"></i> Registrar Retorno
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- CONSULTAR GPS -->
+        <div id="module-consulta" class="module-content hidden">
+            <div class="content-header">
+                <h2>Consultar Estado de GPS</h2>
+                <p>Busca información completa sobre un GPS</p>
             </div>
 
-            <!-- HISTORIAL -->
-            <div id="module-historial" class="module-content hidden">
-                <div class="content-header">
-                    <h2>Historial Completo</h2>
-                    <p>Registro de todos los movimientos de GPS</p>
-                </div>
-                <div class="card">
-                    <h3 style="margin-bottom: 1rem; font-size: 1.25rem; font-weight: 700;">Todas las Asignaciones</h3>
-                    <div class="table-container">
-                        <table id="tabla-historial">
-                            <thead>
-                                <tr>
-                                    <th>IMEI/Serie</th>
-                                    <th>Custodio</th>
-                                    <th>Cliente</th>
-                                    <th>Origen</th>
-                                    <th>Destino</th>
-                                    <th>Fecha Asignación</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+            <div class="card" style="max-width: 600px;">
+                <div class="form-group">
+                    <label class="form-label">
+                        <i class="fas fa-search"></i> IMEI / Número de Serie
+                    </label>
+                    <div class="flex gap-2">
+                        <input type="text" class="form-input" id="buscar-imei-consulta" placeholder="Ingrese IMEI del GPS">
+                        <button type="button" class="btn btn-primary" onclick="consultarGPS()">
+                            <i class="fas fa-search"></i> Buscar
+                        </button>
                     </div>
                 </div>
             </div>
 
+            <div id="resultado-consulta" class="hidden"></div>
+        </div>
 
-            <!-- ==================== MÓDULO DE MISIONES ==================== -->
-            <div id="module-misiones" class="module-content hidden">
-                <div class="content-header">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h2>Gestión de Misiones</h2>
-                            <p>Control de misiones largas y cortas de custodios</p>
-                        </div>
-                        <button class="btn btn-primary" onclick="showModalMision()">
-                            <i class="fas fa-plus"></i> Nueva Misión
-                        </button>
+        <!-- HISTORIAL -->
+        <div id="module-historial" class="module-content hidden">
+            <div class="content-header">
+                <h2>Historial Completo</h2>
+                <p>Registro de todos los movimientos de GPS</p>
+            </div>
+            <div class="card">
+                <h3 style="margin-bottom: 1rem; font-size: 1.25rem; font-weight: 700;">Todas las Asignaciones</h3>
+                <div class="table-container">
+                    <table id="tabla-historial">
+                        <thead>
+                            <tr>
+                                <th>IMEI/Serie</th>
+                                <th>Custodio</th>
+                                <th>Cliente</th>
+                                <th>Origen</th>
+                                <th>Destino</th>
+                                <th>Fecha Asignación</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- ==================== MÓDULO DE MISIONES ==================== -->
+        <div id="module-misiones" class="module-content hidden">
+            <div class="content-header">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2>Gestión de Misiones</h2>
+                        <p>Control de misiones largas y cortas de custodios</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showModalMision()">
+                        <i class="fas fa-plus"></i> Nueva Misión
+                    </button>
+                </div>
+            </div>
+
+            <!-- TABS PARA FILTRAR -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;">
+                    <button class="btn-tab active" onclick="filtrarMisionesPorEstado('en_progreso')">
+                        <i class="fas fa-hourglass-start"></i> En Progreso
+                    </button>
+                    <button class="btn-tab" onclick="filtrarMisionesPorEstado('completada')">
+                        <i class="fas fa-check-circle"></i> Completadas
+                    </button>
+                    <button class="btn-tab" onclick="filtrarMisionesPorEstado('todas')">
+                        <i class="fas fa-list"></i> Todas
+                    </button>
+                </div>
+            </div>
+
+            <!-- ESTADÍSTICAS DE MISIONES -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Total Misiones</h3>
+                        <p id="stat-total-misiones">0</p>
+                    </div>
+                    <div class="stat-icon purple">
+                        <i class="fas fa-tasks"></i>
                     </div>
                 </div>
 
-                <!-- TABS PARA FILTRAR -->
-                <div class="card" style="margin-bottom: 2rem;">
-                    <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;">
-                        <button class="btn-tab active" onclick="filtrarMisionesPorEstado('en_progreso')">
-                            <i class="fas fa-hourglass-start"></i> En Progreso
-                        </button>
-                        <button class="btn-tab" onclick="filtrarMisionesPorEstado('completada')">
-                            <i class="fas fa-check-circle"></i> Completadas
-                        </button>
-                        <button class="btn-tab" onclick="filtrarMisionesPorEstado('todas')">
-                            <i class="fas fa-list"></i> Todas
-                        </button>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Misiones Cortas</h3>
+                        <p id="stat-misiones-cortas">0</p>
+                    </div>
+                    <div class="stat-icon orange">
+                        <i class="fas fa-bolt"></i>
                     </div>
                 </div>
 
-                <!-- ESTADÍSTICAS DE MISIONES -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3>Total Misiones</h3>
-                            <p id="stat-total-misiones">0</p>
-                        </div>
-                        <div class="stat-icon purple">
-                            <i class="fas fa-tasks"></i>
-                        </div>
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>Misiones Largas</h3>
+                        <p id="stat-misiones-largas">0</p>
                     </div>
-
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3>Misiones Cortas</h3>
-                            <p id="stat-misiones-cortas">0</p>
-                        </div>
-                        <div class="stat-icon orange">
-                            <i class="fas fa-bolt"></i>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3>Misiones Largas</h3>
-                            <p id="stat-misiones-largas">0</p>
-                        </div>
-                        <div class="stat-icon green">
-                            <i class="fas fa-mountain"></i>
-                        </div>
-                    </div>
-
-                    <div class="stat-card">
-                        <div class="stat-info">
-                            <h3>En Progreso</h3>
-                            <p id="stat-misiones-activas">0</p>
-                        </div>
-                        <div class="stat-icon red">
-                            <i class="fas fa-fire"></i>
-                        </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-mountain"></i>
                     </div>
                 </div>
 
-                <!-- TABLA DE MISIONES -->
-                <div class="card">
-                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
-                        <i class="fas fa-list"></i> Misiones Registradas
-                    </h3>
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="search-input" id="buscar-misiones" placeholder="Buscar por custodio, descripción..." onkeyup="filtrarTablaMisiones()">
+                <div class="stat-card">
+                    <div class="stat-info">
+                        <h3>En Progreso</h3>
+                        <p id="stat-misiones-activas">0</p>
                     </div>
-                    <div class="table-container">
-                        <table id="tabla-misiones">
-                            <thead>
-                                <tr>
-                                    <th>Custodio</th>
-                                    <th>Tipo de Misión</th>
-                                    <th>Descripción</th>
-                                    <th>Estado</th>
-                                    <th>Fecha Inicio</th>
-                                    <th>Duración (Horas)</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- ESTADÍSTICAS POR CUSTODIO -->
-                <div class="card" style="margin-top: 2rem;">
-                    <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
-                        <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
-                    </h3>
-                    <div class="table-container">
-                        <table id="tabla-estadisticas-custodios">
-                            <thead>
-                                <tr>
-                                    <th>Custodio</th>
-                                    <th>Total Misiones</th>
-                                    <th>Misiones Cortas</th>
-                                    <th>Misiones Largas</th>
-                                    <th>Horas Totales</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="stat-icon red">
+                        <i class="fas fa-fire"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- ALERTAS DE RECUPERACIÓN -->
-            <div id="module-alertas" class="module-content hidden">
-                <div class="content-header">
-                    <h2>⚠️ Alertas de Recuperación de GPS</h2>
-                    <p>GPS que requieren seguimiento para su devolución</p>
+            <!-- TABLA DE MISIONES -->
+            <div class="card">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-list"></i> Misiones Registradas
+                </h3>
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" id="buscar-misiones" placeholder="Buscar por custodio, descripción..." onkeyup="filtrarTablaMisiones()">
                 </div>
-
-                <div id="alertas-container"></div>
+                <div class="table-container">
+                    <table id="tabla-misiones">
+                        <thead>
+                            <tr>
+                                <th>Custodio</th>
+                                <th>Tipo de Misión</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Fecha Inicio</th>
+                                <th>Duración (Horas)</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
             </div>
+
+            <!-- ESTADÍSTICAS POR CUSTODIO -->
+            <div class="card" style="margin-top: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
+                    <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
+                </h3>
+                <div class="table-container">
+                    <table id="tabla-estadisticas-custodios">
+                        <thead>
+                            <tr>
+                                <th>Custodio</th>
+                                <th>Total Misiones</th>
+                                <th>Misiones Cortas</th>
+                                <th>Misiones Largas</th>
+                                <th>Horas Totales</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALERTAS DE RECUPERACIÓN -->
+        <div id="module-alertas" class="module-content hidden">
+            <div class="content-header">
+                <h2>⚠️ Alertas de Recuperación de GPS</h2>
+                <p>GPS que requieren seguimiento para su devolución</p>
+            </div>
+
+            <div id="alertas-container"></div>
+        </div>
     </main>
 
     <!-- MODALES -->
@@ -3533,7 +3534,9 @@ try {
                     <td>${ubicacion}</td>
                    <td>${(() => {
                     const asignacion = Array.isArray(asignaciones) ? asignaciones.find(a => parseInt(a.gps_id) === parseInt(gps.id) && a.estado === 'asignado') : null;
-                    return asignacion ? asignacion.custodio_nombre : '-';
+                    if (!asignacion) return '-';
+                    if (asignacion.tipo_asignacion === 'cliente') return asignacion.cliente || '-';
+                    return asignacion.custodio_nombre || '-';
 })()}</td>
                     <td>
                         <div class="btn-group">
