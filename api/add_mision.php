@@ -11,9 +11,9 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once '../conexion/db.php';
 
 try {
-    $custodio_id = $_POST['custodio_id'] ?? null;
-    $tipo_mision = $_POST['tipo_mision'] ?? null;
-    $descripcion = $_POST['descripcion'] ?? null;
+    $custodio_id   = $_POST['custodio_id']   ?? null;
+    $tipo_mision   = $_POST['tipo_mision']   ?? null;
+    $descripcion   = $_POST['descripcion']   ?? null;
     $observaciones = $_POST['observaciones'] ?? '';
 
     if (empty($custodio_id) || empty($tipo_mision) || empty($descripcion)) {
@@ -31,7 +31,7 @@ try {
         exit;
     }
 
-    // ✅ VALIDACIÓN CRÍTICA: Verificar que NO haya misión activa para este custodio
+    // Verificar que NO haya misión activa para este custodio
     $stmtVerificar = $conn->prepare("
         SELECT id FROM misiones 
         WHERE custodio_id = ? 
@@ -40,11 +40,10 @@ try {
         LIMIT 1
     ");
     $stmtVerificar->execute([$custodio_id]);
-    
     if ($stmtVerificar->rowCount() > 0) {
         http_response_code(400);
         echo json_encode([
-            'success' => false, 
+            'success' => false,
             'message' => 'Este custodio ya tiene una misión activa. Debe completarla antes de iniciar una nueva.'
         ]);
         exit;
@@ -54,42 +53,42 @@ try {
     $stmtGPS = $conn->prepare("SELECT id FROM gps_dispositivos WHERE estado = 'disponible' LIMIT 1");
     $stmtGPS->execute();
     $gpsRow = $stmtGPS->fetch(PDO::FETCH_ASSOC);
-    
     if (!$gpsRow) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'No hay GPS disponibles para asignar']);
         exit;
     }
-
     $gps_id = $gpsRow['id'];
 
-    // Insertar misión con estado 'pendiente' (será actualizado a 'posicionado')
+    // ✅ CORREGIDO: descripcion y observaciones en columnas SEPARADAS
     $sql = "INSERT INTO misiones (
-        custodio_id,
-        gps_id,
-        tipo_mision,
-        fecha_inicio,
-        observaciones,
-        estado
-    ) VALUES (?, ?, ?, NOW(), ?, 'pendiente')";
+                custodio_id,
+                gps_id,
+                tipo_mision,
+                descripcion,
+                observaciones,
+                fecha_inicio,
+                estado
+            ) VALUES (?, ?, ?, ?, ?, NOW(), 'pendiente')";
 
     $stmt = $conn->prepare($sql);
     $resultado = $stmt->execute([
         $custodio_id,
         $gps_id,
         $tipo_mision,
-        $descripcion . "\n" . $observaciones
+        $descripcion,          // ← solo la descripción
+        $observaciones ?: null // ← solo las observaciones
     ]);
 
     if ($resultado) {
         $mision_id = $conn->lastInsertId();
         http_response_code(201);
         echo json_encode([
-            'success' => true,
-            'message' => 'Misión creada correctamente',
-            'mision_id' => $mision_id,
+            'success'       => true,
+            'message'       => 'Misión creada correctamente',
+            'mision_id'     => $mision_id,
             'codigo_mision' => 'MIS-' . strtoupper($tipo_mision[0]) . '-' . $mision_id,
-            'gps_id' => $gps_id
+            'gps_id'        => $gps_id
         ]);
     } else {
         http_response_code(500);
