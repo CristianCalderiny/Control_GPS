@@ -1703,19 +1703,25 @@ try {
                 </div>
             </div>
 
+
+            <!-- TABLA MEJORADA Y ORGANIZADA PARA DASHBOARD -->
             <div class="card">
-                <h3 class="mb-4" style="font-size: 1.25rem; font-weight: 700;">GPS ACTUALMENTE ASIGNADOS</h3>
+                <h3 class="mb-4" style="font-size: 1.25rem; font-weight: 700;">📡 GPS ACTUALMENTE ASIGNADOS</h3>
                 <div class="table-container">
                     <table id="tabla-gps-asignados">
                         <thead>
                             <tr>
-                                <th>IMEI/Serie</th>
-                                <th>Modelo</th>
-                                <th>Custodio</th>
-                                <th>Fecha Asignación</th>
-                                <th>Días Asignado</th>
-                                <th>Ubicación</th>
-                                <th>Estado</th>
+                                <th>IMEI</th>
+                                <th>MODELO</th>
+                                <th>ASIGNADO A</th>
+                                <th>TIPO</th>
+                                <th>PILOTO/CUSTODIO</th>
+                                <th>PLACA</th>
+                                <th>CLIENTE</th>
+                                <th>FECHA ASIGNACIÓN</th>
+                                <th>DÍAS</th>
+                                <th>ESTADO</th>
+                                <th>ACCIONES</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1827,9 +1833,23 @@ try {
                 <h2>Asignar GPS a Custodio</h2>
                 <p>Registra la entrega de un equipo GPS</p>
             </div>
-            <div class="form-card">
+
+            <!-- TABS PARA SELECCIONAR TIPO DE ASIGNACIÓN -->
+            <div class="card" style="margin-bottom: 2rem;">
+                <div style="display: flex; gap: 1rem; border-bottom: 1px solid var(--border); flex-wrap: wrap;">
+                    <button class="btn-tab active" onclick="cambiarTipoAsignacion('custodio')" id="tab-custodio">
+                        <i class="fas fa-user-shield"></i> Asignar a Custodio
+                    </button>
+                    <button class="btn-tab" onclick="cambiarTipoAsignacion('cliente')" id="tab-cliente">
+                        <i class="fas fa-building"></i> Asignar a Cliente (Transporte)
+                    </button>
+                </div>
+            </div>
+
+            <!-- MODO 1: ASIGNACIÓN A CUSTODIO (ORIGINAL) -->
+            <div id="form-custodio-container" class="form-card">
                 <div class="form-header">
-                    <h3>📡 Nueva Asignación de GPS</h3>
+                    <h3>📡 Nueva Asignación de GPS a Custodio</h3>
                 </div>
                 <form id="form-asignar" onsubmit="asignarGPS(event)">
                     <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
@@ -1895,6 +1915,86 @@ try {
                     </div>
                 </form>
             </div>
+
+            <!-- MODO 2: ASIGNACIÓN A CLIENTE (NUEVO) -->
+            <div id="form-cliente-container" class="form-card hidden">
+                <div class="form-header">
+                    <h3>🚚 Nueva Asignación de GPS a Cliente (Transporte)</h3>
+                </div>
+                <form id="form-asignar-cliente" onsubmit="asignarGPSCliente(event)">
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📋 Información General</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-satellite-dish"></i> GPS Disponible <span style="color: var(--danger);">*</span></label>
+                                <select class="form-select" name="gpsIdCliente" required onchange="actualizarInfoGPSCliente(this.value)">
+                                    <option value="">Seleccione un GPS</option>
+                                </select>
+                                <p id="info-gps-cliente" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;"></p>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-building"></i> Cliente <span style="color: var(--danger);">*</span></label>
+                                <input type="text" class="form-input" name="clienteNombre" placeholder="Ej: Transportes XYZ, DHL Honduras" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">🚗 Datos del Vehículo/Envío</h4>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">
+                            <i class="fas fa-info-circle"></i> Los siguientes campos son opcionales. Completa con la información disponible.
+                        </p>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-user-tie"></i> Piloto/Conductor</label>
+                                <input type="text" class="form-input" name="piloto" placeholder="Nombre del piloto (opcional)">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-car"></i> Placa del Vehículo</label>
+                                <input type="text" class="form-input" name="placa" placeholder="Ej: HN-001-ABC (opcional)" style="text-transform: uppercase;">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-box"></i> Contenedor/Carga</label>
+                                <input type="text" class="form-input" name="contenedor" placeholder="Descripción o número de contenedor (opcional)">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-calendar"></i> Fecha y Hora de Asignación <span style="color: var(--danger);">*</span></label>
+                                <input type="datetime-local" class="form-input" name="fechaAsignacionCliente" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: var(--bg-secondary); padding: 1.5rem; border-radius: 12px; margin-bottom: 1.5rem;">
+                        <h4 style="font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-secondary);">📍 Ruta</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-map-pin"></i> Origen (Salida desde) <span style="color: var(--danger);">*</span></label>
+                                <input type="text" class="form-input" name="origenCliente" placeholder="Ej: Almacén Central, Puerto" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><i class="fas fa-map-marker-alt"></i> Destino <span style="color: var(--danger);">*</span></label>
+                                <input type="text" class="form-input" name="destinoCliente" placeholder="Ej: San Pedro Sula, La Ceiba" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-comment"></i> Observaciones Adicionales</label>
+                        <textarea class="form-textarea" name="observacionesCliente" placeholder="Notas sobre la ruta, instrucciones especiales, números de seguimiento, etc..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="reset" class="btn btn-secondary" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-redo"></i> Limpiar
+                        </button>
+                        <button type="submit" class="btn btn-primary" style="flex: 1; padding: 1rem; font-size: 1rem;">
+                            <i class="fas fa-check"></i> Asignar GPS a Cliente
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <!-- RETORNAR GPS -->
@@ -1916,25 +2016,66 @@ try {
                                 <option value="">Seleccione GPS a retornar</option>
                             </select>
                         </div>
-                        <div id="info-retorno-bloque" class="hidden" style="margin-top: 1rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid var(--info);">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.75rem;">ℹ️ Información de la Asignación</p>
-                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">GPS (IMEI)</p>
-                                    <p id="retorno-imei" style="font-family: monospace; font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Cliente</p>
-                                    <p id="retorno-cliente" style="font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Custodio</p>
-                                    <p id="retorno-custodio" style="font-weight: 700;">-</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Días Asignado</p>
-                                    <p id="retorno-dias" style="font-weight: 700;">-</p>
-                                </div>
+                    </div>
+
+                    <!-- BLOQUE DE INFO DINÁMICO PARA CUSTODIO -->
+                    <div id="info-retorno-custodio" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid var(--info);">
+                        <p style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.75rem;">ℹ️ Información de la Asignación (CUSTODIO)</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">GPS (IMEI)</p>
+                                <p id="retorno-imei-custodio" style="font-family: monospace; font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Cliente</p>
+                                <p id="retorno-cliente-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Custodio</p>
+                                <p id="retorno-custodio-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                            <div>
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Días Asignado</p>
+                                <p id="retorno-dias-custodio" style="font-weight: 700;">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOQUE DE INFO DINÁMICO PARA CLIENTE -->
+                    <div id="info-retorno-cliente" class="hidden" style="margin-bottom: 1.5rem; padding: 1rem; background: var(--bg-card); border-radius: 12px; border-left: 4px solid #3b82f6;">
+                        <p style="font-size: 0.75rem; color: #1e40af; text-transform: uppercase; font-weight: 600; margin-bottom: 1rem;">ℹ️ Información de la Asignación (CLIENTE/TRANSPORTE)</p>
+                        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">GPS (IMEI)</p>
+                                <p id="retorno-imei-cliente" style="font-family: monospace; font-weight: 700; word-break: break-all;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CLIENTE</p>
+                                <p id="retorno-cliente-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PILOTO</p>
+                                <p id="retorno-piloto-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">PLACA</p>
+                                <p id="retorno-placa-cliente" style="font-family: monospace; font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">ORIGEN</p>
+                                <p id="retorno-origen-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DESTINO</p>
+                                <p id="retorno-destino-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">CONTENEDOR</p>
+                                <p id="retorno-contenedor-cliente" style="font-weight: 700;">-</p>
+                            </div>
+                            <div style="padding: 0.75rem; background: var(--bg-secondary); border-radius: 8px;">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem; font-weight: 600;">DÍAS ASIGNADO</p>
+                                <p id="retorno-dias-cliente" style="font-weight: 700;">-</p>
                             </div>
                         </div>
                     </div>
@@ -2239,8 +2380,6 @@ try {
                             </small>
                         </div>
                     </div>
-
-
 
                     <!-- SECCIÓN 2: DESCRIPCIÓN Y DETALLES -->
                     <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(5, 150, 105, 0.05)); padding: 1.5rem; border-radius: 16px; margin-bottom: 1.5rem; border-left: 4px solid var(--success);">
@@ -2721,6 +2860,8 @@ try {
                 return;
             }
 
+
+
             // VALIDACIÓN FUERTE: Rango de fechas (no más de 7 días anteriores)
             const hoyActual = new Date();
             const hoySolo = new Date(hoyActual.getFullYear(), hoyActual.getMonth(), hoyActual.getDate());
@@ -2792,23 +2933,32 @@ try {
 
         async function retornarGPS(event) {
             event.preventDefault();
+
             const formData = new FormData(event.target);
             const asignacionId = formData.get('asignacionId');
 
-            // Validar que se haya seleccionado una asignación
+            console.log('🔄 INICIANDO RETORNO DE GPS');
+            console.log('Asignación ID:', asignacionId);
+
+            // VALIDAR QUE SE HAYA SELECCIONADO UNA ASIGNACIÓN
             if (!asignacionId) {
                 alert('❌ Por favor selecciona un GPS para retornar');
                 return;
             }
 
-            // Obtener la asignación
-            const asignacion = asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId));
+            // OBTENER LA ASIGNACIÓN
+            const asignacion = Array.isArray(asignaciones) ?
+                asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId)) : null;
+
             if (!asignacion) {
                 alert('❌ Asignación no encontrada');
                 return;
             }
 
-            // Validar que no intente retornar con una fecha anterior a la asignación
+            console.log('📍 Asignación encontrada:', asignacion);
+            console.log('📍 Tipo de asignación:', asignacion.tipo_asignacion);
+
+            // VALIDAR FECHA
             const fechaAsignacion = new Date(asignacion.fecha_asignacion);
             const ahora = new Date();
 
@@ -2821,35 +2971,58 @@ try {
                 return;
             }
 
+            // ✅ AQUÍ VA LA LÓGICA: DETERMINAR QUÉ API LLAMAR
+            let apiEndpoint = 'api/return_gps.php';
+            const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
+
+            if (tipoAsignacion === 'cliente') {
+                apiEndpoint = 'api/return_gps_cliente.php';
+                console.log('✅ Es asignación a CLIENTE - Usando:', apiEndpoint);
+            } else {
+                console.log('✅ Es asignación a CUSTODIO - Usando:', apiEndpoint);
+            }
+
             try {
-                const response = await fetch('api/return_gps.php', {
+                console.log('📤 Enviando petición a:', apiEndpoint);
+
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     body: formData
                 });
 
+                console.log('📥 Respuesta recibida. Status:', response.status);
+
                 const data = await response.json();
 
+                console.log('📊 Datos JSON parseados:', data);
+
                 if (data.success) {
+                    console.log('✅ RETORNO EXITOSO');
                     agregarNotificacion('GPS Retornado', `GPS ${asignacion.imei} retornado exitosamente`);
                     event.target.reset();
 
-                    // Verificar que el elemento existe antes de usarlo
-                    const infoRetorno = document.getElementById('info-retorno-bloque');
-                    if (infoRetorno) {
-                        infoRetorno.classList.add('hidden');
-                    }
+                    // LIMPIAR BLOQUES DE INFO
+                    const infoRetornoCustodio = document.getElementById('info-retorno-custodio');
+                    const infoRetornoCliente = document.getElementById('info-retorno-cliente');
+                    if (infoRetornoCustodio) infoRetornoCustodio.classList.add('hidden');
+                    if (infoRetornoCliente) infoRetornoCliente.classList.add('hidden');
 
                     await cargarDatosDelServidor();
                     alert('✅ Retorno registrado correctamente');
                 } else {
+                    console.error('❌ ERROR EN RESPUESTA:', data.message);
                     alert('❌ ' + (data.message || 'Error al retornar GPS'));
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('❌ Error al retornar GPS');
+                console.error('❌ ERROR DE RED/PARSING:', error);
+                console.error('Stack:', error.stack);
+                alert('❌ Error al retornar GPS: ' + error.message);
             }
         }
 
+        // ==================== ACTUALIZAR DASHBOARD PARA INCLUIR CLIENTES ====================
+
+        // REEMPLAZAR la función actualizarDashboard existente con esta:
         function actualizarDashboard() {
             console.log('Actualizando dashboard con:', {
                 gpsDispositivos,
@@ -2868,13 +3041,13 @@ try {
             const asignacionesActivas = Array.isArray(asignaciones) ? asignaciones.filter(a => a.estado === 'asignado') : [];
 
             if (asignacionesActivas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center">
-                    <div class="empty-state">
-                        <i class="fas fa-check-circle"></i>
-                        <h3>No hay GPS asignados</h3>
-                        <p>Todos los GPS están disponibles</p>
-                    </div>
-                </td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" style="text-align:center">
+            <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h3>No hay GPS asignados</h3>
+                <p>Todos los GPS están disponibles</p>
+            </div>
+        </td></tr>`;
                 return;
             }
 
@@ -2884,16 +3057,442 @@ try {
                 const fechaFormato = fechaObj.toLocaleString('es-HN');
                 const diasAsignado = Math.floor((Date.now() - new Date(asignacion.fecha_asignacion)) / 86400000);
 
+                // Determinar si es asignación a custodio o cliente
+                const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
+
+                // VALORES POR TIPO
+                let asignadoA = '';
+                let pilotoCustom = '';
+                let placa = '';
+                let cliente = '';
+                let badgeTipo = '';
+
+                if (tipoAsignacion === 'cliente') {
+                    asignadoA = asignacion.cliente || '-';
+                    pilotoCustom = asignacion.piloto || '-';
+                    placa = asignacion.placa || '-';
+                    cliente = asignacion.cliente || '-';
+                    badgeTipo = '<span class="badge" style="background: #dbeafe; color: #1e40af;"><i class="fas fa-building"></i> Cliente</span>';
+                } else {
+                    asignadoA = asignacion.custodio_nombre || '-';
+                    pilotoCustom = asignacion.custodio_nombre || '-';
+                    placa = '-';
+                    cliente = asignacion.cliente || '-';
+                    badgeTipo = '<span class="badge" style="background: #e0e7ff; color: #4338ca;"><i class="fas fa-user"></i> Custodio</span>';
+                }
+
                 html += `
-                    <tr>
-                        <td style="font-family: monospace;">${asignacion.imei || 'N/A'}</td>
-                        <td>${asignacion.marca || '-'} ${asignacion.modelo || '-'}</td>
-                        <td>${asignacion.custodio_nombre || 'N/A'}</td>
-                        <td>${fechaFormato}</td>
-                        <td>${diasAsignado} días</td>
-                        <td><span class="ubicacion-badge ubicacion-campo"><i class="fas fa-map-marker-alt"></i> En Campo</span></td>
-                        <td><span class="badge badge-warning">Asignado</span></td>
-                    </tr>`;
+            <tr>
+                <td style="font-family: monospace; font-weight: 600;">${asignacion.imei || 'N/A'}</td>
+                <td>${asignacion.marca || '-'} ${asignacion.modelo || '-'}</td>
+                <td style="font-weight: 600;">${asignadoA}</td>
+                <td>${badgeTipo}</td>
+                <td>${pilotoCustom}</td>
+                <td style="font-family: monospace; font-weight: 600;">${placa}</td>
+                <td>${cliente}</td>
+                <td style="font-size: 0.9rem;">${fechaFormato}</td>
+                <td style="text-align: center; font-weight: 600;">
+                    <span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.85rem;">
+                        ${diasAsignado} días
+                    </span>
+                </td>
+                <td><span class="badge badge-warning">Asignado</span></td>
+                <td>
+                    <button class="btn btn-primary" onclick="verDetallesAsignacion(${asignacion.id}, '${tipoAsignacion}')" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; white-space: nowrap;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                </td>
+            </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // NUEVA FUNCIÓN para ver detalles de asignación (MODAL MEJORADO)
+        function verDetallesAsignacion(asignacionId, tipoAsignacion) {
+            const asignacion = asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId));
+            if (!asignacion) return;
+
+            let html = '';
+            let titulo = '';
+            let icono = '';
+            let gradiente = '';
+            let campos = [];
+
+            if (tipoAsignacion === 'cliente') {
+                titulo = 'Asignación a Cliente (Transporte)';
+                icono = 'fas fa-truck';
+                gradiente = 'linear-gradient(135deg, #3b82f6, #1e40af)';
+
+                campos = [{
+                        label: '🏢 CLIENTE',
+                        valor: asignacion.cliente
+                    },
+                    {
+                        label: '👤 PILOTO',
+                        valor: asignacion.piloto || 'No especificado'
+                    },
+                    {
+                        label: '🚗 PLACA',
+                        valor: asignacion.placa || 'No especificado'
+                    },
+                    {
+                        label: '📦 CONTENEDOR',
+                        valor: asignacion.contenedor || 'No especificado'
+                    },
+                    {
+                        label: '📡 GPS (IMEI)',
+                        valor: asignacion.imei,
+                        monospace: true
+                    },
+                    {
+                        label: '🔧 MARCA',
+                        valor: asignacion.marca
+                    },
+                    {
+                        label: '⚙️ MODELO',
+                        valor: asignacion.modelo
+                    },
+                    {
+                        label: '📍 ORIGEN',
+                        valor: asignacion.origen
+                    },
+                    {
+                        label: '🎯 DESTINO',
+                        valor: asignacion.destino
+                    },
+                    {
+                        label: '📅 FECHA ASIGNACIÓN',
+                        valor: new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')
+                    },
+                    {
+                        label: '💬 OBSERVACIONES',
+                        valor: asignacion.observaciones || 'Sin observaciones'
+                    }
+                ];
+            } else {
+                titulo = 'Asignación a Custodio';
+                icono = 'fas fa-user-shield';
+                gradiente = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+
+                campos = [{
+                        label: '👤 CUSTODIO',
+                        valor: asignacion.custodio_nombre
+                    },
+                    {
+                        label: '📞 TELÉFONO',
+                        valor: asignacion.custodio_telefono,
+                        monospace: true
+                    },
+                    {
+                        label: '🏢 CLIENTE',
+                        valor: asignacion.cliente
+                    },
+                    {
+                        label: '📡 GPS (IMEI)',
+                        valor: asignacion.imei,
+                        monospace: true
+                    },
+                    {
+                        label: '🔧 MARCA',
+                        valor: asignacion.marca
+                    },
+                    {
+                        label: '⚙️ MODELO',
+                        valor: asignacion.modelo
+                    },
+                    {
+                        label: '📍 ORIGEN',
+                        valor: asignacion.origen
+                    },
+                    {
+                        label: '🎯 DESTINO',
+                        valor: asignacion.destino
+                    },
+                    {
+                        label: '📅 FECHA ASIGNACIÓN',
+                        valor: new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')
+                    },
+                    {
+                        label: '💬 OBSERVACIONES',
+                        valor: asignacion.observaciones || 'Sin observaciones'
+                    }
+                ];
+            }
+
+            // GENERAR CAMPO HTML
+            let camposHTML = '';
+            campos.forEach(campo => {
+                const fontFamily = campo.monospace ? 'font-family: monospace;' : '';
+                camposHTML += `
+            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 10px; border-left: 3px solid var(--primary);">
+                <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.5rem 0; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                    ${campo.label}
+                </p>
+                <p style="margin: 0; font-weight: 600; color: var(--text-primary); ${fontFamily}">
+                    ${campo.valor}
+                </p>
+            </div>
+        `;
+            });
+
+            html = `
+        <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
+            <div class="modal-content" style="max-width: 900px; margin: auto;">
+                <div class="modal-header" style="background: ${gradiente}; color: white; border-radius: 20px 20px 0 0;">
+                    <h3><i class="${icono}"></i> ${titulo}</h3>
+                    <button class="close-modal" onclick="cerrarDetallesAsignacion()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; cursor: pointer; width: 40px; height: 40px; border-radius: 10px; font-size: 1.5rem;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" style="padding: 2rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                        ${camposHTML}
+                    </div>
+
+                    <div style="text-align: center; padding-top: 1.5rem; border-top: 1px solid var(--border);">
+                        <button onclick="cerrarDetallesAsignacion()" class="btn btn-primary" style="padding: 0.75rem 2rem; font-weight: 700; border-radius: 10px;">
+                            <i class="fas fa-check"></i> Entendido
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function cerrarDetallesAsignacion() {
+            const modal = document.getElementById('modal-detalles-asignacion');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // ACTUALIZAR TABLA DE HISTORIAL PARA INCLUIR CLIENTES
+        function actualizarTablaHistorial() {
+            console.log('Actualizando tabla historial con datos:', asignaciones);
+            const tbody = document.querySelector('#tabla-historial tbody');
+
+            if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;"><div class="empty-state"><i class="fas fa-history"></i><h3>No hay historial</h3><p>Las asignaciones aparecerán aquí</p></div></td></tr>`;
+                return;
+            }
+
+            let html = '';
+            asignaciones.slice().reverse().forEach(asignacion => {
+                const estadoClass = asignacion.estado === 'asignado' ? 'badge-warning' : 'badge-success';
+                const estadoTexto = asignacion.estado ? asignacion.estado.charAt(0).toUpperCase() + asignacion.estado.slice(1) : 'N/A';
+                const fechaObj = new Date(asignacion.fecha_asignacion);
+                const fechaFormato = fechaObj.toLocaleString('es-HN');
+
+                const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
+                const custodioInfo = tipoAsignacion === 'cliente' ?
+                    `${asignacion.cliente} (Cliente)` :
+                    asignacion.custodio_nombre;
+
+                html += `<tr>
+            <td style="font-family: monospace;">${asignacion.imei || 'N/A'}</td>
+            <td>${custodioInfo || 'N/A'}</td>
+            <td>${asignacion.cliente || '-'}</td>
+            <td>${asignacion.origen || '-'}</td>
+            <td>${asignacion.destino || '-'}</td>
+            <td>${fechaFormato}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+        </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+        // NUEVA FUNCIÓN para ver detalles de asignación
+        function verDetallesAsignacion(asignacionId, tipoAsignacion) {
+            const asignacion = asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId));
+            if (!asignacion) return;
+
+            let html = '';
+
+            if (tipoAsignacion === 'cliente') {
+                html = `
+            <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
+                <div class="modal-content" style="max-width: 600px; margin: auto;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 20px 20px 0 0;">
+                        <h3><i class="fas fa-building"></i> Asignación a Cliente</h3>
+                        <button class="close-modal" onclick="cerrarDetallesAsignacion()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="padding: 2rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">IMEI</p>
+                                <p style="font-family: monospace; font-weight: 700;">${asignacion.imei}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">MARCA/MODELO</p>
+                                <p style="font-weight: 700;">${asignacion.marca} ${asignacion.modelo}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CLIENTE</p>
+                                <p style="font-weight: 700;">${asignacion.cliente}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">PILOTO</p>
+                                <p style="font-weight: 700;">${asignacion.piloto || '-'}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">PLACA</p>
+                                <p style="font-weight: 700;">${asignacion.placa || '-'}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CONTENEDOR</p>
+                                <p style="font-weight: 700;">${asignacion.contenedor || '-'}</p>
+                            </div>
+                        </div>
+
+                        <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--primary);">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">📍 RUTA</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Origen</p>
+                                    <p style="font-weight: 600;">${asignacion.origen}</p>
+                                </div>
+                                <div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Destino</p>
+                                    <p style="font-weight: 600;">${asignacion.destino}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${asignacion.observaciones ? `
+                            <div style="padding: 1.5rem; background: #fffbeb; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--warning);">
+                                <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.75rem; font-weight: 600;">💬 OBSERVACIONES</p>
+                                <p style="margin: 0; color: #78350f;">${asignacion.observaciones}</p>
+                            </div>
+                        ` : ''}
+
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">📅 FECHA ASIGNACIÓN</p>
+                            <p style="font-weight: 600;">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <button onclick="cerrarDetallesAsignacion()" class="btn btn-primary" style="padding: 1rem 2rem; font-weight: 700;">
+                                <i class="fas fa-check"></i> Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            } else {
+                // Asignación a custodio
+                html = `
+            <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
+                <div class="modal-content" style="max-width: 600px; margin: auto;">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 20px 20px 0 0;">
+                        <h3><i class="fas fa-user-shield"></i> Asignación a Custodio</h3>
+                        <button class="close-modal" onclick="cerrarDetallesAsignacion()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="padding: 2rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">IMEI</p>
+                                <p style="font-family: monospace; font-weight: 700;">${asignacion.imei}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">MARCA/MODELO</p>
+                                <p style="font-weight: 700;">${asignacion.marca} ${asignacion.modelo}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CUSTODIO</p>
+                                <p style="font-weight: 700;">${asignacion.custodio_nombre}</p>
+                            </div>
+                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
+                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CLIENTE</p>
+                                <p style="font-weight: 700;">${asignacion.cliente}</p>
+                            </div>
+                        </div>
+
+                        <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--primary);">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">📍 RUTA</p>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                <div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Origen</p>
+                                    <p style="font-weight: 600;">${asignacion.origen}</p>
+                                </div>
+                                <div>
+                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Destino</p>
+                                    <p style="font-weight: 600;">${asignacion.destino}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${asignacion.observaciones ? `
+                            <div style="padding: 1.5rem; background: #fffbeb; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--warning);">
+                                <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.75rem; font-weight: 600;">💬 OBSERVACIONES</p>
+                                <p style="margin: 0; color: #78350f;">${asignacion.observaciones}</p>
+                            </div>
+                        ` : ''}
+
+                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem;">
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">📅 FECHA ASIGNACIÓN</p>
+                            <p style="font-weight: 600;">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <button onclick="cerrarDetallesAsignacion()" class="btn btn-primary" style="padding: 1rem 2rem; font-weight: 700;">
+                                <i class="fas fa-check"></i> Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function cerrarDetallesAsignacion() {
+            const modal = document.getElementById('modal-detalles-asignacion');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // ACTUALIZAR TABLA DE HISTORIAL PARA INCLUIR CLIENTES
+        function actualizarTablaHistorial() {
+            console.log('Actualizando tabla historial con datos:', asignaciones);
+            const tbody = document.querySelector('#tabla-historial tbody');
+
+            if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;"><div class="empty-state"><i class="fas fa-history"></i><h3>No hay historial</h3><p>Las asignaciones aparecerán aquí</p></div></td></tr>`;
+                return;
+            }
+
+            let html = '';
+            asignaciones.slice().reverse().forEach(asignacion => {
+                const estadoClass = asignacion.estado === 'asignado' ? 'badge-warning' : 'badge-success';
+                const estadoTexto = asignacion.estado ? asignacion.estado.charAt(0).toUpperCase() + asignacion.estado.slice(1) : 'N/A';
+                const fechaObj = new Date(asignacion.fecha_asignacion);
+                const fechaFormato = fechaObj.toLocaleString('es-HN');
+
+                const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
+                const custodioInfo = tipoAsignacion === 'cliente' ?
+                    `${asignacion.cliente} (Cliente)` :
+                    asignacion.custodio_nombre;
+
+                html += `<tr>
+            <td style="font-family: monospace;">${asignacion.imei || 'N/A'}</td>
+            <td>${custodioInfo || 'N/A'}</td>
+            <td>${asignacion.cliente || '-'}</td>
+            <td>${asignacion.origen || '-'}</td>
+            <td>${asignacion.destino || '-'}</td>
+            <td>${fechaFormato}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+        </tr>`;
             });
             tbody.innerHTML = html;
         }
@@ -3151,37 +3750,76 @@ try {
         }
 
         function mostrarInfoRetorno(id) {
-            const infoRetornoBloque = document.getElementById('info-retorno-bloque');
+            const infoRetornoCustodio = document.getElementById('info-retorno-custodio');
+            const infoRetornoCliente = document.getElementById('info-retorno-cliente');
 
             if (!id) {
-                if (infoRetornoBloque) {
-                    infoRetornoBloque.classList.add('hidden');
-                }
+                if (infoRetornoCustodio) infoRetornoCustodio.classList.add('hidden');
+                if (infoRetornoCliente) infoRetornoCliente.classList.add('hidden');
                 return;
             }
 
             const asignacion = Array.isArray(asignaciones) ? asignaciones.find(x => parseInt(x.id) === parseInt(id)) : null;
             if (!asignacion) {
-                if (infoRetornoBloque) {
-                    infoRetornoBloque.classList.add('hidden');
-                }
+                if (infoRetornoCustodio) infoRetornoCustodio.classList.add('hidden');
+                if (infoRetornoCliente) infoRetornoCliente.classList.add('hidden');
                 return;
             }
 
             const dias = Math.floor((Date.now() - new Date(asignacion.fecha_asignacion)) / 86400000);
+            const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
 
-            const retornoImei = document.getElementById('retorno-imei');
-            const retornoCliente = document.getElementById('retorno-cliente');
-            const returnoCustodio = document.getElementById('retorno-custodio');
-            const retornoDias = document.getElementById('retorno-dias');
+            console.log('📍 Mostrando info retorno:', {
+                tipo: tipoAsignacion,
+                asignacionId: asignacion.id,
+                imei: asignacion.imei,
+                cliente: asignacion.cliente,
+                dias: dias
+            });
 
-            if (retornoImei) retornoImei.textContent = asignacion.imei || '-';
-            if (retornoCliente) retornoCliente.textContent = asignacion.cliente || '-';
-            if (returnoCustodio) returnoCustodio.textContent = asignacion.custodio_nombre || '-';
-            if (retornoDias) retornoDias.textContent = `${dias} día${dias !== 1 ? 's' : ''}`;
+            // MOSTRAR SEGÚN TIPO DE ASIGNACIÓN
+            if (tipoAsignacion === 'cliente') {
+                // MOSTRAR INFO DE CLIENTE
+                if (infoRetornoCustodio) infoRetornoCustodio.classList.add('hidden');
+                if (infoRetornoCliente) infoRetornoCliente.classList.remove('hidden');
 
-            if (infoRetornoBloque) {
-                infoRetornoBloque.classList.remove('hidden');
+                // Llenar datos de cliente
+                const iMEICliente = document.getElementById('retorno-imei-cliente');
+                const clienteCliente = document.getElementById('retorno-cliente-cliente');
+                const pilotoCliente = document.getElementById('retorno-piloto-cliente');
+                const placaCliente = document.getElementById('retorno-placa-cliente');
+                const origenCliente = document.getElementById('retorno-origen-cliente');
+                const destinoCliente = document.getElementById('retorno-destino-cliente');
+                const contenedorCliente = document.getElementById('retorno-contenedor-cliente');
+                const diasCliente = document.getElementById('retorno-dias-cliente');
+
+                if (iMEICliente) iMEICliente.textContent = asignacion.imei || '-';
+                if (clienteCliente) clienteCliente.textContent = asignacion.cliente || '-';
+                if (pilotoCliente) pilotoCliente.textContent = asignacion.piloto || '-';
+                if (placaCliente) placaCliente.textContent = asignacion.placa || '-';
+                if (origenCliente) origenCliente.textContent = asignacion.origen || '-';
+                if (destinoCliente) destinoCliente.textContent = asignacion.destino || '-';
+                if (contenedorCliente) contenedorCliente.textContent = asignacion.contenedor || '-';
+                if (diasCliente) diasCliente.textContent = `${dias} día${dias !== 1 ? 's' : ''}`;
+
+                console.log('✅ Información de CLIENTE mostrada correctamente');
+
+            } else {
+                // MOSTRAR INFO DE CUSTODIO (POR DEFECTO)
+                if (infoRetornoCliente) infoRetornoCliente.classList.add('hidden');
+                if (infoRetornoCustodio) infoRetornoCustodio.classList.remove('hidden');
+
+                const iMEICustodio = document.getElementById('retorno-imei-custodio');
+                const clienteCustodio = document.getElementById('retorno-cliente-custodio');
+                const custodioCustodio = document.getElementById('retorno-custodio-custodio');
+                const diasCustodio = document.getElementById('retorno-dias-custodio');
+
+                if (iMEICustodio) iMEICustodio.textContent = asignacion.imei || '-';
+                if (clienteCustodio) clienteCustodio.textContent = asignacion.cliente || '-';
+                if (custodioCustodio) custodioCustodio.textContent = asignacion.custodio_nombre || '-';
+                if (diasCustodio) diasCustodio.textContent = `${dias} día${dias !== 1 ? 's' : ''}`;
+
+                console.log('✅ Información de CUSTODIO mostrada correctamente');
             }
         }
 
@@ -4732,6 +5370,146 @@ try {
                 alert('❌ Error al actualizar estado: ' + error.message);
             }
         }
+
+        // ==================== FUNCIONES PARA ASIGNACIÓN POR CLIENTE ====================
+
+        function cambiarTipoAsignacion(tipo) {
+            const custodioContainer = document.getElementById('form-custodio-container');
+            const clienteContainer = document.getElementById('form-cliente-container');
+            const tabCustodio = document.getElementById('tab-custodio');
+            const tabCliente = document.getElementById('tab-cliente');
+
+            if (tipo === 'custodio') {
+                custodioContainer.classList.remove('hidden');
+                clienteContainer.classList.add('hidden');
+                tabCustodio.classList.add('active');
+                tabCliente.classList.remove('active');
+            } else {
+                custodioContainer.classList.add('hidden');
+                clienteContainer.classList.remove('hidden');
+                tabCustodio.classList.remove('active');
+                tabCliente.classList.add('active');
+            }
+        }
+
+        function actualizarInfoGPSCliente(gpsId) {
+            if (!gpsId) {
+                document.getElementById('info-gps-cliente').textContent = '';
+                return;
+            }
+            const gps = gpsDispositivos.find(g => parseInt(g.id) === parseInt(gpsId));
+            if (gps) {
+                document.getElementById('info-gps-cliente').textContent = `${gps.marca} ${gps.modelo} • IMEI: ${gps.imei}`;
+            }
+        }
+
+        async function asignarGPSCliente(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+
+            const gpsId = formData.get('gpsIdCliente');
+            const clienteNombre = formData.get('clienteNombre');
+
+            // Validar que se hayan seleccionado GPS y cliente
+            if (!gpsId || !clienteNombre) {
+                alert('❌ Por favor completa los campos obligatorios marcados con *');
+                return;
+            }
+
+            // Obtener el GPS seleccionado
+            const gps = gpsDispositivos.find(g => parseInt(g.id) === parseInt(gpsId));
+            if (!gps) {
+                alert('❌ GPS no encontrado');
+                return;
+            }
+
+            // Validar que el GPS no tenga una asignación activa (de custodio)
+            const asignacionActiva = asignaciones.find(a =>
+                parseInt(a.gps_id) === parseInt(gpsId) && a.estado === 'asignado'
+            );
+
+            if (asignacionActiva) {
+                alert('❌ Este GPS ya tiene una asignación activa.\n\nCustodio: ' + asignacionActiva.custodio_nombre +
+                    '\nAsignado desde: ' + new Date(asignacionActiva.fecha_asignacion).toLocaleString('es-HN'));
+                return;
+            }
+
+            // VALIDACIÓN DE FECHA (NO MÁS DE 7 DÍAS ANTERIOR)
+            const hoyActual = new Date();
+            const hoySolo = new Date(hoyActual.getFullYear(), hoyActual.getMonth(), hoyActual.getDate());
+
+            const fechaMinima = new Date(hoySolo);
+            fechaMinima.setDate(fechaMinima.getDate() - 7);
+
+            const fechaAsignacionInput = event.target.querySelector('input[name="fechaAsignacionCliente"]');
+            let fechaSeleccionada = new Date(hoySolo);
+
+            if (fechaAsignacionInput && fechaAsignacionInput.value) {
+                fechaSeleccionada = new Date(fechaAsignacionInput.value);
+            }
+
+            const fechaSeleccionadaSolo = new Date(fechaSeleccionada.getFullYear(), fechaSeleccionada.getMonth(), fechaSeleccionada.getDate());
+
+            console.log('=== VALIDACIÓN DE FECHA (CLIENTE) ===');
+            console.log('Fecha hoy: ' + hoySolo.toLocaleDateString('es-HN'));
+            console.log('Fecha mínima (7 días atrás): ' + fechaMinima.toLocaleDateString('es-HN'));
+            console.log('Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN'));
+
+            if (fechaSeleccionadaSolo.getTime() < fechaMinima.getTime()) {
+                const diferenciaDias = Math.floor((hoySolo.getTime() - fechaSeleccionadaSolo.getTime()) / (1000 * 60 * 60 * 24));
+                alert('❌ NO PUEDES ASIGNAR UN GPS CON UNA FECHA ANTERIOR A 7 DÍAS.\n\n' +
+                    'Fecha mínima permitida: ' + fechaMinima.toLocaleDateString('es-HN') + '\n' +
+                    'Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN'));
+                return;
+            }
+
+            if (fechaSeleccionadaSolo.getTime() > hoySolo.getTime()) {
+                alert('❌ NO PUEDES ASIGNAR UN GPS CON UNA FECHA FUTURA.\n\n' +
+                    'Fecha seleccionada: ' + fechaSeleccionadaSolo.toLocaleDateString('es-HN') + '\n' +
+                    'Fecha de hoy: ' + hoySolo.toLocaleDateString('es-HN'));
+                return;
+            }
+
+            try {
+                const response = await fetch('api/assign_gps_cliente.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    agregarNotificacion('GPS Asignado a Cliente', `${gps.imei} asignado a ${clienteNombre}`);
+                    event.target.reset();
+                    await cargarDatosDelServidor();
+                    alert('✅ GPS asignado correctamente al cliente');
+                } else {
+                    alert('❌ ' + (data.message || 'Error al asignar GPS'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Error al asignar GPS: ' + error.message);
+            }
+        }
+
+        // Cargar selectores para formulario de cliente
+        function cargarSelectoresCliente() {
+            const selectGPS = document.querySelector('#form-asignar-cliente select[name="gpsIdCliente"]');
+            if (selectGPS && Array.isArray(gpsDispositivos)) {
+                const disponibles = gpsDispositivos.filter(g => g.estado === 'disponible');
+                selectGPS.innerHTML = '<option value="">Seleccione un GPS</option>';
+                disponibles.forEach(g => {
+                    selectGPS.innerHTML += `<option value="${g.id}">${g.imei} - ${g.marca} ${g.modelo}</option>`;
+                });
+            }
+        }
+
+        // Actualizar selectores cuando se cargan datos
+        const originalActualizarTodo = actualizarTodo;
+        actualizarTodo = function() {
+            originalActualizarTodo();
+            cargarSelectoresCliente();
+        };
     </script>
 </body>
 

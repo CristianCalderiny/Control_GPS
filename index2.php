@@ -2402,7 +2402,6 @@ try {
         </div>
     </div>
 
-
     <script>
         let sidebarCollapsed = false;
         let gpsDispositivos = [];
@@ -2920,7 +2919,10 @@ try {
                     <td>${gps.modelo || '-'}</td>
                     <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
                     <td>${ubicacion}</td>
-                    <td>-</td>
+                   <td>${(() => {
+                    const asignacion = Array.isArray(asignaciones) ? asignaciones.find(a => parseInt(a.gps_id) === parseInt(gps.id) && a.estado === 'asignado') : null;
+                    return asignacion ? asignacion.custodio_nombre : '-';
+})()}</td>
                     <td>
                         <div class="btn-group">
                             <button class="btn" onclick="editarGPS(${gps.id})" style="padding: 0.5rem 1rem; background-color: #fbbf24; color: #000; font-weight: 600; border-radius: 8px; border: none; cursor: pointer;">
@@ -3799,14 +3801,12 @@ try {
 
             let html = '';
             misiones.forEach(mision => {
-                const estadoClass = mision.estado === 'pendiente' ? 'badge-info' :
-                    mision.estado === 'posicionado' ? 'badge-warning' :
+                const estadoClass = mision.estado === 'posicionado' ? 'badge-warning' :
                     mision.estado === 'en_ruta' ? 'badge-danger' :
                     mision.estado === 'finalizada' ? 'badge-success' :
                     mision.estado === 'completada' ? 'badge-success' : 'badge-secondary';
 
                 const estadoTexto = {
-                    'pendiente': '⏳ Pendiente',
                     'posicionado': '📍 Posicionado',
                     'en_ruta': '🚗 En Ruta',
                     'finalizada': '✅ Finalizada',
@@ -3818,12 +3818,12 @@ try {
                 const tipoTexto = mision.tipo_mision === 'corta' ? '⚡ Corta' : '🏔️ Larga';
 
                 const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
-                const duracion = mision.duracion_real || mision.duracion_estimada || '-';
+                const duracion = (mision.duracion_real && mision.duracion_real > 0) ? mision.duracion_real : '-';
 
                 html += `<tr>
             <td>${mision.custodio_nombre || 'N/A'}</td>
             <td><span class="badge ${tipoClass}">${tipoTexto}</span></td>
-            <td>${mision.descripcion ? mision.descripcion.substring(0, 50) + '...' : '-'}</td>
+            <td>${(limpiarDescripcion(mision.descripcion) ? limpiarDescripcion(mision.descripcion).substring(0, 50) + '...' : '-')}</td>
             <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
             <td>${fechaInicio}</td>
             <td>${duracion} h</td>
@@ -3885,32 +3885,189 @@ try {
             }
         }
 
-        // Filtrar misiones por estado
+        // ========================================
+        // FILTRAR MISIONES POR ESTADO (CORREGIDO)
+        // ========================================
         function filtrarMisionesPorEstado(estado) {
+            console.log('Filtrando misiones por estado:', estado);
+
             // Actualizar botones activos
             document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
             event.target.closest('.btn-tab').classList.add('active');
 
-            // Filtrar tabla
+            // Obtener la tabla
             const tbody = document.querySelector('#tabla-misiones tbody');
             const filas = tbody.querySelectorAll('tr');
 
-            filas.forEach(fila => {
+            console.log('Total de filas en tabla:', filas.length);
+
+            filas.forEach((fila, index) => {
+                // Obtener el badge de estado de la fila
+                const badges = fila.querySelectorAll('.badge');
+                let estadoMision = '';
+
+                // Buscar el badge que contiene el estado (normalmente es el 4to badge)
+                for (let badge of badges) {
+                    const texto = badge.textContent.toLowerCase();
+                    if (texto.includes('posicionado') || texto.includes('en_ruta') ||
+                        texto.includes('en ruta') || texto.includes('finalizada') ||
+                        texto.includes('completada') || texto.includes('cancelada')) {
+                        estadoMision = texto;
+                        break;
+                    }
+                }
+
+                console.log(`Fila ${index}: estado="${estadoMision}"`);
+
+                // Mostrar/ocultar según filtro
                 if (estado === 'todas') {
                     fila.style.display = '';
-                } else {
-                    const badgeEstado = fila.querySelector('.badge');
-                    const estadoActual = badgeEstado ? badgeEstado.textContent.toLowerCase() : '';
-
-                    if (estado === 'en_progreso' && (estadoActual.includes('pendiente') || estadoActual.includes('en curso'))) {
+                } else if (estado === 'en_progreso') {
+                    // Mostrar solo: posicionado, en_ruta
+                    if (estadoMision.includes('posicionado') || estadoMision.includes('en_ruta') || estadoMision.includes('en ruta')) {
                         fila.style.display = '';
-                    } else if (estado === 'completada' && estadoActual.includes('completada')) {
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                } else if (estado === 'completada') {
+                    // Mostrar solo: finalizada, completada
+                    if (estadoMision.includes('finalizada') || estadoMision.includes('completada')) {
                         fila.style.display = '';
                     } else {
                         fila.style.display = 'none';
                     }
                 }
             });
+        }
+
+        // ========================================
+        // ACTUALIZAR ESTADÍSTICAS INCLUYENDO FINALIZADAS
+        // ========================================
+        async function actualizarEstadisticasMisiones() {
+            try {
+                const response = await fetch('api/get_estadisticas_misiones.php');
+                const data = await response.json();
+
+                if (data.stats) {
+                    document.getElementById('stat-total-misiones').textContent = data.stats.total_misiones || 0;
+                    document.getElementById('stat-misiones-cortas').textContent = data.stats.misiones_cortas || 0;
+                    document.getElementById('stat-misiones-largas').textContent = data.stats.misiones_largas || 0;
+                    document.getElementById('stat-misiones-activas').textContent = data.stats.misiones_activas || 0;
+                }
+
+                // Contar misiones finalizadas localmente
+                if (Array.isArray(misiones)) {
+                    const finalizadas = misiones.filter(m =>
+                        m.estado === 'finalizada' || m.estado === 'completada'
+                    ).length;
+
+                    console.log('Misiones finalizadas calculadas:', finalizadas);
+
+                    // Si existe el elemento de finalizadas, actualizarlo
+                    const estatFinalizadas = document.getElementById('stat-misiones-finalizadas');
+                    if (estatFinalizadas) {
+                        estatFinalizadas.textContent = finalizadas;
+                    }
+                }
+
+                // Actualizar tabla de estadísticas por custodio
+                if (data.estadisticas_custodios) {
+                    const tbody = document.querySelector('#tabla-estadisticas-custodios tbody');
+                    if (tbody) {
+                        let html = '';
+                        data.estadisticas_custodios.forEach(custodio => {
+                            html += `<tr>
+                        <td>${custodio.nombre || '-'}</td>
+                        <td>${custodio.total_misiones || 0}</td>
+                        <td>${custodio.misiones_cortas || 0}</td>
+                        <td>${custodio.misiones_largas || 0}</td>
+                        <td>${custodio.horas_totales || 0} h</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="verHistorialCustodio(${custodio.id})" style="padding: 0.5rem 1rem;">
+                                <i class="fas fa-history"></i> Ver
+                            </button>
+                        </td>
+                    </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    }
+                }
+            } catch (error) {
+                console.error('Error actualizando estadísticas:', error);
+            }
+        }
+
+        // ========================================
+        // ACTUALIZAR TABLA DE MISIONES (MEJORADO)
+        // ========================================
+        function actualizarTablaMisiones() {
+            console.log('Actualizando tabla de misiones con:', misiones);
+            const tbody = document.querySelector('#tabla-misiones tbody');
+
+            if (!Array.isArray(misiones) || misiones.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">
+            <div class="empty-state">
+                <i class="fas fa-tasks"></i>
+                <h3>No hay misiones registradas</h3>
+                <p>Crea tu primera misión</p>
+            </div>
+        </td></tr>`;
+                return;
+            }
+
+            let html = '';
+            misiones.forEach(mision => {
+                // Determinar clase y texto del estado
+                let estadoClass = 'badge-secondary';
+                let estadoTexto = 'N/A';
+
+                const estadoNormalizado = (mision.estado || '').toLowerCase().trim();
+
+                if (estadoNormalizado === 'posicionado') {
+                    estadoClass = 'badge-warning';
+                    estadoTexto = '📍 Posicionado';
+                } else if (estadoNormalizado === 'en_ruta') {
+                    estadoClass = 'badge-danger';
+                    estadoTexto = '🚗 En Ruta';
+                } else if (estadoNormalizado === 'finalizada') {
+                    estadoClass = 'badge-success';
+                    estadoTexto = '✅ Finalizada';
+                } else if (estadoNormalizado === 'completada') {
+                    estadoClass = 'badge-success';
+                    estadoTexto = '✅ Completada';
+                } else if (estadoNormalizado === 'cancelada') {
+                    estadoClass = 'badge-danger';
+                    estadoTexto = '❌ Cancelada';
+                }
+
+                const tipoClass = mision.tipo_mision === 'corta' ? 'badge-mision-corta' : 'badge-mision-larga';
+                const tipoTexto = mision.tipo_mision === 'corta' ? '⚡ Corta' : '🏔️ Larga';
+
+                const fechaInicio = new Date(mision.fecha_inicio).toLocaleString('es-HN');
+                const duracion = mision.duracion_real || mision.duracion_estimada || '-';
+
+                html += `<tr>
+            <td>${mision.custodio_nombre || 'N/A'}</td>
+            <td><span class="badge ${tipoClass}">${tipoTexto}</span></td>
+            <td>${(limpiarDescripcion(mision.descripcion) ? limpiarDescripcion(mision.descripcion).substring(0, 50) + '...' : '-')}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+            <td>${fechaInicio}</td>
+            <td>${duracion} h</td>
+            <td>
+                <div class="btn-group" style="gap: 0.25rem; flex-wrap: wrap;">
+                    ${mision.estado !== 'completada' && mision.estado !== 'cancelada' && mision.estado !== 'finalizada' ? `
+                        <button class="btn" onclick="mostrarModalCambiarEstado(${mision.id}, '${mision.estado}')" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #8b5cf6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                            <i class="fas fa-edit"></i> Estado
+                        </button>
+                    ` : ''}
+                    <button class="btn" onclick="verDetallesMision(${mision.id})" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #3b82f6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+                        <i class="fas fa-eye"></i> Ver
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+            });
+            tbody.innerHTML = html;
         }
 
         // Filtrar tabla de misiones por búsqueda
@@ -3920,6 +4077,13 @@ try {
                 tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
             });
         }
+
+        function limpiarDescripcion(texto) {
+            if (!texto) return '';
+            // Remover todas las etiquetas [Estado: ...] del texto
+            return texto.replace(/\s*\[Estado:\s*[^\]]+\]\s*/g, '').trim();
+        }
+
 
         // Actualizar estadísticas de misiones
         async function actualizarEstadisticasMisiones() {
@@ -3961,7 +4125,8 @@ try {
             }
         }
 
-        // Ver historial de custodio
+
+
         async function verHistorialCustodio(custodioId) {
             try {
                 const response = await fetch(`api/get_historial_custodio.php?custodio_id=${custodioId}`);
@@ -3969,12 +4134,6 @@ try {
 
                 if (data.custodio) {
                     const contenido = document.getElementById('historial-custodio-contenido');
-
-                    // Función para limpiar texto de etiquetas [Estado: ...]
-                    const limpiarTexto = (texto) => {
-                        if (!texto) return '';
-                        return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
-                    };
 
                     let html = `
                 <div style="margin-bottom: 2rem;">
@@ -4026,8 +4185,8 @@ try {
                                 estadoIcon = '📍';
                             }
 
-                            // Limpiar descripción
-                            const descripcionLimpia = limpiarTexto(mision.descripcion);
+                            // Limpiar descripción usando la función global
+                            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
 
                             html += `
                         <div class="mision-card" style="margin-bottom: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 12px; border-left: 4px solid var(--primary);">
@@ -4093,11 +4252,9 @@ try {
             }
         }
 
-        // Ver detalles de misión
-
-        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO
-
-        // Ver detalles de misión - MODAL CON DISEÑO MEJORADO Y CORREGIDO
+        // ========================================
+        // VER DETALLES DE MISIÓN
+        // ========================================
         function verDetallesMision(misionId) {
             const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
             if (!mision) return;
@@ -4122,11 +4279,6 @@ try {
 
             // Determinar color del estado
             const estadoColors = {
-                'pendiente': {
-                    bg: '#fef3c7',
-                    text: '#92400e',
-                    icon: '⏳'
-                },
                 'posicionado': {
                     bg: '#dbeafe',
                     text: '#1e40af',
@@ -4190,16 +4342,10 @@ try {
             const prioridadKey = (mision.prioridad || 'media').toLowerCase();
             const prioridadColor = prioridadColors[prioridadKey] || prioridadColors['media'];
 
-            // Limpiar descripción y observaciones (remover etiquetas [Estado: ...])
-            const limpiarTexto = (texto) => {
-                if (!texto) return '';
-                // Remover todas las etiquetas [Estado: ...] del texto
-                return texto.replace(/\[Estado:\s*[^\]]+\]\s*/g, '').trim();
-            };
-
-            const descripcionLimpia = limpiarTexto(mision.descripcion);
-            const observacionesLimpias = limpiarTexto(mision.observaciones);
-            const observacionesFinalizacionLimpias = limpiarTexto(mision.observaciones_finalizacion);
+            // Usar la función global para limpiar descripción y observaciones
+            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
+            const observacionesLimpias = limpiarDescripcion(mision.observaciones);
+            const observacionesFinalizacionLimpias = limpiarDescripcion(mision.observaciones_finalizacion);
 
             const html = `
     <div class="modal active" id="modal-detalles-mision" style="display: flex !important; z-index: 10000;">
@@ -4320,7 +4466,7 @@ try {
                             </p>
                         </div>
                         <p style="margin: 0; color: #1f2937; font-weight: 600; font-size: 0.9rem;">
-                            ${mision.duracion_real || '0'} horas
+                            ${(mision.duracion_real && mision.duracion_real > 0) ? mision.duracion_real + ' horas' : '<span style="color: #94a3b8; font-size: 0.85rem;">Sin completar</span>'}
                         </p>
                     </div>
                     
@@ -4368,7 +4514,9 @@ try {
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        // Función para cerrar el modal de detalles
+        // ========================================
+        // CERRAR MODAL DE DETALLES
+        // ========================================
         function cerrarModalDetalles() {
             const modal = document.getElementById('modal-detalles-mision');
             if (modal) {
@@ -4376,11 +4524,9 @@ try {
             }
         }
 
-
-
-
-
-        // Actualizar ícono de misión según tipo
+        // ========================================
+        // ACTUALIZAR ÍCONO DE MISIÓN SEGÚN TIPO
+        // ========================================
         function actualizarIconoMision(tipo) {
             const selectIcono = document.querySelector('#form-mision select[name="tipo_mision"]');
             if (!selectIcono) return;
@@ -4392,7 +4538,9 @@ try {
             }
         }
 
-        // Modificar el método cargarDatosDelServidor para incluir misiones
+        // ========================================
+        // MODIFICAR EL MÉTODO CARGAR DATOS DEL SERVIDOR
+        // ========================================
         const originalCargarDatosDelServidor = cargarDatosDelServidor;
         cargarDatosDelServidor = async function() {
             try {
@@ -4404,24 +4552,14 @@ try {
             }
         };
 
-        // Modal para cambiar estado
-
-
-
-        // Modal para cambiar estado - VERSIÓN CORREGIDA
-
-        // Modal para cambiar estado - VERSIÓN CORREGIDA CON VALIDACIONES
-
-        // Modal para cambiar estado - VERSIÓN CON ESTADOS DESHABILITADOS
+        // ========================================
+        // MODAL PARA CAMBIAR ESTADO
+        // ========================================
         function mostrarModalCambiarEstado(misionId, estadoActual) {
             const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
             if (!mision) return;
 
             const estados = [{
-                    valor: 'pendiente',
-                    label: '⏳ Pendiente'
-                },
-                {
                     valor: 'posicionado',
                     label: '📍 Posicionado'
                 },
@@ -4451,6 +4589,9 @@ try {
                 return `<option value="${e.valor}" ${disabled}>${e.label}${textoAdicional}</option>`;
             }).join('');
 
+            // Limpiar descripción para mostrar en el modal
+            const descripcionLimpia = limpiarDescripcion(mision.descripcion);
+
             let html = `
     <div class="modal active" id="modal-cambiar-estado" style="display: flex !important; z-index: 10000;">
         <div class="modal-content" style="max-width: 600px; margin: auto;">
@@ -4469,7 +4610,7 @@ try {
                         ${mision.custodio_nombre}
                     </p>
                     <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
-                        ${mision.descripcion ? mision.descripcion.substring(0, 80) + '...' : 'Sin descripción'}
+                        ${descripcionLimpia ? descripcionLimpia.substring(0, 80) + '...' : 'Sin descripción'}
                     </p>
                     <div style="display: inline-block; padding: 0.5rem 1rem; background: #fef3c7; color: #92400e; border-radius: 8px; font-size: 0.85rem; font-weight: 600;">
                         Estado actual: <strong>${estadoActual}</strong>
@@ -4518,7 +4659,6 @@ try {
         </div>
     </div>
     `;
-
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
@@ -4530,10 +4670,37 @@ try {
             }
         }
 
+        function calcularDuracionMision(misionId, nuevoEstado) {
+            const mision = misiones.find(m => parseInt(m.id) === parseInt(misionId));
+            if (!mision) return null;
+
+            const fechaInicio = new Date(mision.fecha_inicio);
+            const ahora = new Date();
+
+            const diferencia = ahora - fechaInicio;
+            const horas = Math.floor(diferencia / (1000 * 60 * 60));
+            const minutos = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+            const duracionDecimal = horas + (minutos / 60);
+
+            return {
+                horas: horas,
+                minutos: minutos,
+                duracionDecimal: duracionDecimal.toFixed(2),
+                duracionFormato: `${horas}h ${minutos}m`
+            };
+        }
+
+
         async function cambiarEstadoMision(event, misionId) {
             event.preventDefault();
             const formData = new FormData(event.target);
             formData.append('mision_id', misionId);
+
+            const nuevoEstado = formData.get('nuevo_estado');
+            if (!nuevoEstado) {
+                alert('❌ Por favor selecciona un nuevo estado');
+                return;
+            }
 
             try {
                 const response = await fetch('api/update_estado_mision.php', {
@@ -4541,10 +4708,17 @@ try {
                     body: formData
                 });
 
-                const data = await response.json();
+                const texto = await response.text();
+                let data;
+                try {
+                    data = JSON.parse(texto);
+                } catch (e) {
+                    alert('Error del servidor: ' + texto.substring(0, 200));
+                    return;
+                }
 
                 if (data.success) {
-                    agregarNotificacion('Estado Actualizado', `Estado de misión actualizado correctamente`);
+                    agregarNotificacion('Estado Actualizado', `Misión actualizada a: ${nuevoEstado}`);
                     cerrarModalEstado();
                     await cargarMisiones();
                     alert('✅ Estado actualizado correctamente');
@@ -4553,14 +4727,9 @@ try {
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('❌ Error al actualizar estado');
+                alert('❌ Error al actualizar estado: ' + error.message);
             }
         }
-
-
-
-
-        ////// ----  //////
     </script>
 </body>
 
