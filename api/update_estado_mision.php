@@ -11,8 +11,8 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once '../conexion/db.php';
 
 try {
-    $mision_id = $_POST['mision_id'] ?? null;
-    $nuevo_estado = $_POST['nuevo_estado'] ?? null;
+    $mision_id     = $_POST['mision_id']     ?? null;
+    $nuevo_estado  = $_POST['nuevo_estado']  ?? null;
     $observaciones = $_POST['observaciones'] ?? '';
 
     if (!$mision_id || !$nuevo_estado) {
@@ -40,46 +40,37 @@ try {
         exit;
     }
 
-    // Si el nuevo estado es 'finalizada' o 'completada', registrar fecha de fin
-    $fecha_fin = ($nuevo_estado === 'finalizada' || $nuevo_estado === 'completada') ? 'NOW()' : 'NULL';
-
     $esFinalizada = in_array($nuevo_estado, ['finalizada', 'completada', 'cancelada']);
 
+    // ✅ CORREGIDO: observaciones NO se toca (sin CONCAT)
+    // ✅ CORREGIDO: solo UN execute (el original tenía dos)
     $sql = "UPDATE misiones SET 
-    estado = ?,
-    fecha_fin = " . ($esFinalizada ? 'NOW()' : 'fecha_fin') . ",
-    duracion_real = " . ($esFinalizada ? 'ROUND(TIMESTAMPDIFF(MINUTE, fecha_inicio, NOW()) / 60, 2)' : 'duracion_real') . ",
-    observaciones = CONCAT(COALESCE(observaciones, ''), '\n\n[Estado: " . $nuevo_estado . "] ', ?)
-WHERE id = ?";
+                estado        = ?,
+                fecha_fin     = " . ($esFinalizada ? 'NOW()'      : 'fecha_fin')      . ",
+                duracion_real = " . ($esFinalizada
+                    ? 'ROUND(TIMESTAMPDIFF(MINUTE, fecha_inicio, NOW()) / 60, 2)'
+                    : 'duracion_real') . "
+            WHERE id = ?";
 
     $stmt = $conn->prepare($sql);
     $resultado = $stmt->execute([
         $nuevo_estado,
-        $observaciones,
-        $mision_id
-    ]);
-
-    
-
-    $stmt = $conn->prepare($sql);
-    $resultado = $stmt->execute([
-        $nuevo_estado,
-        $observaciones,
         $mision_id
     ]);
 
     if ($resultado) {
         http_response_code(200);
         echo json_encode([
-            'success' => true,
-            'message' => 'Estado actualizado correctamente',
-            'mision_id' => $mision_id,
+            'success'      => true,
+            'message'      => 'Estado actualizado correctamente',
+            'mision_id'    => $mision_id,
             'nuevo_estado' => $nuevo_estado
         ]);
     } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error al actualizar estado']);
     }
+
 } catch (PDOException $e) {
     error_log("Error en update_estado_mision.php: " . $e->getMessage());
     http_response_code(500);
@@ -89,3 +80,4 @@ WHERE id = ?";
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
+?>

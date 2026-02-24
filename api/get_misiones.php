@@ -18,6 +18,7 @@ try {
         m.tipo_mision,
         m.fecha_inicio,
         m.fecha_fin,
+        m.descripcion,
         m.observaciones,
         m.estado,
         m.duracion_real,
@@ -28,35 +29,36 @@ try {
     LEFT JOIN gps_dispositivos g ON m.gps_id = g.id
     ORDER BY m.fecha_inicio DESC";
 
-
-
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $misiones = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Convertir tipo_mision a tipo_mision_id para compatibilidad
     foreach ($misiones as &$mision) {
         $tipo = $mision['tipo_mision'];
-        $mision['tipo_mision_id'] = ($tipo === 'corta') ? 1 : 2;
-        $mision['nombre_mision'] = 'Misión ' . ucfirst($tipo) . ' #' . $mision['id'];
-        $mision['codigo_mision'] = 'MIS-' . strtoupper($tipo[0]) . '-' . $mision['id'];
-        $mision['descripcion'] = $mision['observaciones'];
+        $mision['tipo_mision_id']  = ($tipo === 'corta') ? 1 : 2;
+        $mision['nombre_mision']   = 'Misión ' . ucfirst($tipo) . ' #' . $mision['id'];
+        $mision['codigo_mision']   = 'MIS-' . strtoupper($tipo[0]) . '-' . $mision['id'];
+        // ✅ ELIMINADO: $mision['descripcion'] = $mision['observaciones'];
+        //    Ahora cada campo viene directo de su columna en la BD
         $mision['duracion_estimada'] = ($tipo === 'corta') ? 4 : 8;
+
         if (!empty($mision['duracion_real']) && $mision['duracion_real'] > 0) {
             $mision['duracion_real'] = round($mision['duracion_real'], 2);
         } elseif (!empty($mision['fecha_fin'])) {
             $inicio = new DateTime($mision['fecha_inicio']);
-            $fin = new DateTime($mision['fecha_fin']);
+            $fin    = new DateTime($mision['fecha_fin']);
             $mision['duracion_real'] = round(($fin->getTimestamp() - $inicio->getTimestamp()) / 3600, 2);
         } else {
             $mision['duracion_real'] = null;
         }
-        $mision['prioridad'] = 'media';
-        $mision['observaciones_finalizacion'] = null;
+
+        $mision['prioridad']                   = 'media';
+        $mision['observaciones_finalizacion']  = null;
     }
 
     echo json_encode($misiones);
     exit;
+
 } catch (PDOException $e) {
     error_log("Error en get_misiones.php: " . $e->getMessage());
     http_response_code(500);
