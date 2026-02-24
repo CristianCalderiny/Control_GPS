@@ -14,7 +14,7 @@ try {
     // Obtener datos del formulario
     $gpsId = $_POST['gpsIdCliente'] ?? null;
     $clienteNombre = $_POST['clienteNombre'] ?? null;
-    $telefono = $_POST['telefono'] ?? null;
+    $telefono = $_POST['telefonoPiloto'] ?? null;
     $piloto = $_POST['piloto'] ?? null;
     $placa = $_POST['placa'] ?? null;
     $contenedor = $_POST['contenedor'] ?? null;

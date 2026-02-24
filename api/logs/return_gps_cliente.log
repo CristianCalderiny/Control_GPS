@@ -1,3 +1,12 @@
 [2026-02-23 20:52:27] === INICIO RETORNO GPS CLIENTE ===
 [2026-02-23 20:52:27] Datos recibidos: asignacionId=2, fecha=2026-02-23T20:52, estado=bueno
 [2026-02-23 20:52:27] ERROR: Asignación no encontrada. ID: 2
+[2026-02-24 05:03:54] === INICIO RETORNO GPS CLIENTE ===
+[2026-02-24 05:03:54] Datos recibidos: asignacionId=12, fecha=2026-02-23T22:03, estado=perfecto
+[2026-02-24 05:03:54] ERROR: Asignación no encontrada. ID: 12
+[2026-02-24 05:04:09] === INICIO RETORNO GPS CLIENTE ===
+[2026-02-24 05:04:09] Datos recibidos: asignacionId=12, fecha=2026-02-23T22:03, estado=perfecto
+[2026-02-24 05:04:09] ERROR: Asignación no encontrada. ID: 12
+[2026-02-24 05:04:12] === INICIO RETORNO GPS CLIENTE ===
+[2026-02-24 05:04:12] Datos recibidos: asignacionId=12, fecha=2026-02-23T22:03, estado=perfecto
+[2026-02-24 05:04:12] ERROR: Asignación no encontrada. ID: 12
