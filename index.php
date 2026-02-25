@@ -3502,6 +3502,90 @@ try {
             </div>
         </div>
     </div>`;
+
+
+            } else {
+                // Caso CUSTODIO
+                html = `
+        <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
+            <div class="modal-content" style="max-width: 580px; margin: auto; border-radius: 24px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #7c3aed, #8b5cf6); padding: 1.75rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🛡️</div>
+                        <div>
+                            <h3 style="margin: 0; color: white; font-size: 1.15rem; font-weight: 700;">Asignación a Custodio</h3>
+                            <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 0.8rem;">Detalle completo</p>
+                        </div>
+                    </div>
+                    <button onclick="cerrarDetallesAsignacion()" style="background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+                </div>
+
+                <div style="padding: 1.75rem 2rem; background: var(--bg-card);">
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">📡 Dispositivo GPS</p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">IMEI</p>
+                                <p style="font-family: monospace; font-weight: 700; margin: 0; font-size: 1rem; color: var(--text-primary);">${asignacion.imei}</p>
+                            </div>
+                            <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                                <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Marca / Modelo</p>
+                                <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.marca} ${asignacion.modelo}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">👤 Custodio</p>
+                        <div style="padding: 0.9rem 1rem; background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 12px; border: 1px solid #ddd6fe;">
+                            <p style="font-weight: 700; margin: 0 0 0.25rem; font-size: 1.1rem; color: #5b21b6;">${asignacion.custodio_nombre}</p>
+                            <p style="font-family: monospace; font-size: 0.9rem; color: #7c3aed; margin: 0;">${asignacion.custodio_telefono || 'Sin teléfono'}</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">🏢 Cliente</p>
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.cliente || '—'}</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">📍 Ruta</p>
+                        <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center;">
+                            <div style="padding: 0.9rem 1rem; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                                <p style="font-size: 0.7rem; color: #166534; margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Origen</p>
+                                <p style="font-weight: 700; margin: 0; color: #15803d;">${asignacion.origen || '—'}</p>
+                            </div>
+                            <div style="font-size: 1.2rem; color: var(--text-secondary); text-align: center;">→</div>
+                            <div style="padding: 0.9rem 1rem; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                                <p style="font-size: 0.7rem; color: #991b1b; margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Destino</p>
+                                <p style="font-weight: 700; margin: 0; color: #dc2626;">${asignacion.destino || '—'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${asignacion.observaciones ? `
+                    <div style="margin-bottom: 1.25rem; padding: 1rem; background: #fffbeb; border-radius: 12px; border-left: 3px solid #f59e0b;">
+                        <p style="font-size: 0.7rem; color: #92400e; margin: 0 0 0.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">💬 Observaciones</p>
+                        <p style="margin: 0; color: #78350f; font-size: 0.9rem; line-height: 1.5;">${asignacion.observaciones}</p>
+                    </div>` : ''}
+
+                    <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                        <span style="font-size: 1.5rem;">📅</span>
+                        <div>
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.2rem; font-weight: 600; text-transform: uppercase;">Fecha de Asignación</p>
+                            <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
+                        </div>
+                    </div>
+
+                    <button onclick="cerrarDetallesAsignacion()" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #7c3aed, #8b5cf6); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;">
+                        Entendido
+                    </button>
+                </div>
+            </div>
+        </div>`;
             }
 
             document.body.insertAdjacentHTML('beforeend', html);
