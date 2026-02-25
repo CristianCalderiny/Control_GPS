@@ -2370,22 +2370,19 @@ try {
                         </thead>
                         <tbody id="tbody-estadisticas-dias"></tbody>
                     </table>
-
-
-
-
                 </div>
             </div>
+        </div>
 
-            <!-- ALERTAS DE RECUPERACIÓN -->
-            <div id="module-alertas" class="module-content hidden">
-                <div class="content-header">
-                    <h2>⚠️ Alertas de Recuperación de GPS</h2>
-                    <p>GPS que requieren seguimiento para su devolución</p>
-                </div>
-
-                <div id="alertas-container"></div>
+        <!-- ALERTAS DE RECUPERACIÓN -->
+        <div id="module-alertas" class="module-content hidden">
+            <div class="content-header">
+                <h2>⚠️ Alertas de Recuperación de GPS</h2>
+                <p>GPS que requieren seguimiento para su devolución</p>
             </div>
+
+            <div id="alertas-container"></div>
+        </div>
     </main>
 
     <!-- MODALES -->
@@ -4059,6 +4056,7 @@ try {
             document.getElementById('resultado-consulta').classList.remove('hidden');
         }
 
+
         function actualizarAlertasRecuperacion() {
             const container = document.getElementById('alertas-container');
             if (!container) return;
@@ -4074,40 +4072,85 @@ try {
 
             asignacionesActivas.forEach(asignacion => {
                 const dias = Math.floor((Date.now() - new Date(asignacion.fecha_asignacion)) / 86400000);
+                const tipo = asignacion.tipo_asignacion || 'custodio';
+
+                let camposInfo = '';
+
+                if (tipo === 'cliente') {
+                    camposInfo = `
+                        <div class="alert-item">
+                            <div class="alert-item-label">🏢 Cliente</div>
+                            <div class="alert-item-value">${asignacion.cliente || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">👤 Piloto/Conductor</div>
+                            <div class="alert-item-value">${asignacion.piloto || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">📞 Teléfono del Piloto</div>
+                            <div class="alert-item-value">${asignacion.telefono || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">🚗 Placa del Vehículo</div>
+                            <div class="alert-item-value">${asignacion.placa || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">📦 Contenedor/Carga</div>
+                            <div class="alert-item-value">${asignacion.contenedor || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">⏱️ Días Asignado</div>
+                            <div class="alert-item-value"><span class="alert-days">${dias}</span> día${dias !== 1 ? 's' : ''}</div>
+                        </div>`;
+                } else {
+                    camposInfo = `
+                        <div class="alert-item">
+                            <div class="alert-item-label">👤 Custodio</div>
+                            <div class="alert-item-value">${asignacion.custodio_nombre || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">📞 Teléfono</div>
+                            <div class="alert-item-value">${asignacion.custodio_telefono || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">🏢 Cliente</div>
+                            <div class="alert-item-value">${asignacion.cliente || '—'}</div>
+                        </div>
+                        <div class="alert-item">
+                            <div class="alert-item-label">⏱️ Días Asignado</div>
+                            <div class="alert-item-value"><span class="alert-days">${dias}</span> día${dias !== 1 ? 's' : ''}</div>
+                        </div>`;
+                }
+
+                const contactoTelefono = tipo === 'cliente' ?
+                    (asignacion.telefono || '') :
+                    (asignacion.custodio_telefono || '');
+
+                const badgeTipo = tipo === 'cliente' ?
+                    `<span style="background:#dbeafe; color:#1e40af; font-size:0.75rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:20px; margin-left:0.5rem;"><i class="fas fa-building"></i> Cliente</span>` :
+                    `<span style="background:#ede9fe; color:#5b21b6; font-size:0.75rem; font-weight:700; padding:0.2rem 0.6rem; border-radius:20px; margin-left:0.5rem;"><i class="fas fa-user-shield"></i> Custodio</span>`;
 
                 html += `
                     <div class="alert-card">
                         <div class="alert-card-header">
                             <div class="alert-icon">🚨</div>
                             <div style="flex: 1;">
-                                <div class="alert-title">GPS ${asignacion.imei} - Requiere Seguimiento</div>
+                                <div class="alert-title">
+                                    GPS ${asignacion.imei} - Requiere Seguimiento
+                                    ${badgeTipo}
+                                </div>
                             </div>
                         </div>
                         
                         <div class="alert-content">
-                            <div class="alert-item">
-                                <div class="alert-item-label">👤 Custodio</div>
-                                <div class="alert-item-value">${asignacion.custodio_nombre}</div>
-                            </div>
-                            <div class="alert-item">
-                                <div class="alert-item-label">📞 Teléfono</div>
-                                <div class="alert-item-value">${asignacion.custodio_telefono}</div>
-                            </div>
-                            <div class="alert-item">
-                                <div class="alert-item-label">🏢 Cliente</div>
-                                <div class="alert-item-value">${asignacion.cliente}</div>
-                            </div>
-                            <div class="alert-item">
-                                <div class="alert-item-label">⏱️ Días Asignado</div>
-                                <div class="alert-item-value"><span class="alert-days">${dias}</span> día${dias !== 1 ? 's' : ''}</div>
-                            </div>
+                            ${camposInfo}
                         </div>
 
                         <div class="alert-actions">
                             <button type="button" class="btn btn-primary" onclick="irARetornar(${asignacion.id})" style="flex: 1;">
                                 <i class="fas fa-undo"></i> Registrar Retorno
                             </button>
-                            <button type="button" class="btn btn-secondary" onclick="contactarCustodio('${asignacion.custodio_telefono}')" style="flex: 1;">
+                            <button type="button" class="btn btn-secondary" onclick="contactarCustodio('${contactoTelefono}')" style="flex: 1;">
                                 <i class="fas fa-phone"></i> Contactar
                             </button>
                         </div>
@@ -4118,6 +4161,9 @@ try {
             html += '</div>';
             container.innerHTML = html;
         }
+
+
+
 
         function irARetornar(asignacionId) {
             showModule('retornar');
