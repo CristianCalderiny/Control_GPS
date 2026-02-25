@@ -2286,37 +2286,65 @@ try {
             </div>
 
             <!-- ESTADÍSTICAS POR CUSTODIO -->
+            <!-- ESTADÍSTICAS POR CUSTODIO -->
             <div class="card" style="margin-top: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700;">
-                    <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
-                </h3>
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+                    <h3 style="font-size:1.25rem; font-weight:700; margin:0;">
+                        <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
+                    </h3>
+                    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Desde</label>
+                            <input type="date" id="filtro-fecha-inicio" class="form-input" style="padding:0.5rem 0.75rem; font-size:0.9rem; width:160px;">
+                        </div>
+                        <div>
+                            <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Hasta</label>
+                            <input type="date" id="filtro-fecha-fin" class="form-input" style="padding:0.5rem 0.75rem; font-size:0.9rem; width:160px;">
+                        </div>
+                        <div style="margin-top:1.2rem;">
+                            <button onclick="cargarEstadisticasDias()" class="btn btn-primary" style="padding:0.6rem 1.25rem;">
+                                <i class="fas fa-search"></i> Filtrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leyenda -->
+                <div style="display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
+                    <span style="font-size:0.8rem; background:#dbeafe; color:#1e40af; padding:0.25rem 0.75rem; border-radius:6px; font-weight:600;">MC = Misión Corta</span>
+                    <span style="font-size:0.8rem; background:#d1fae5; color:#065f46; padding:0.25rem 0.75rem; border-radius:6px; font-weight:600;">ML = Misión Larga</span>
+                </div>
+
                 <div class="table-container">
-                    <table id="tabla-estadisticas-custodios">
+                    <table id="tabla-estadisticas-custodios" style="font-size:0.85rem; min-width:900px;">
                         <thead>
                             <tr>
-                                <th>Custodio</th>
-                                <th>Total Misiones</th>
-                                <th>Misiones Cortas</th>
-                                <th>Misiones Largas</th>
-                                <th>Horas Totales</th>
-                                <th>Acciones</th>
+                                <th style="min-width:140px; position:sticky; left:0; z-index:11; background:var(--bg-secondary);">CUSTODIO</th>
+                                <th style="text-align:center; background:#fef3c7; color:#92400e;">TOTAL</th>
+                                <th style="text-align:center;">LUNES</th>
+                                <th style="text-align:center;">MARTES</th>
+                                <th style="text-align:center;">MIÉRCOLES</th>
+                                <th style="text-align:center;">JUEVES</th>
+                                <th style="text-align:center;">VIERNES</th>
+                                <th style="text-align:center;">SÁBADO</th>
+                                <th style="text-align:center;">DOMINGO</th>
+                                <th style="text-align:center;">ACCIONES</th>
                             </tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody id="tbody-estadisticas-dias"></tbody>
                     </table>
                 </div>
             </div>
-        </div>
 
-        <!-- ALERTAS DE RECUPERACIÓN -->
-        <div id="module-alertas" class="module-content hidden">
-            <div class="content-header">
-                <h2>⚠️ Alertas de Recuperación de GPS</h2>
-                <p>GPS que requieren seguimiento para su devolución</p>
+            <!-- ALERTAS DE RECUPERACIÓN -->
+            <div id="module-alertas" class="module-content hidden">
+                <div class="content-header">
+                    <h2>⚠️ Alertas de Recuperación de GPS</h2>
+                    <p>GPS que requieren seguimiento para su devolución</p>
+                </div>
+
+                <div id="alertas-container"></div>
             </div>
-
-            <div id="alertas-container"></div>
-        </div>
     </main>
 
     <!-- MODALES -->
@@ -4632,11 +4660,33 @@ try {
         // ========================================
         // ACTUALIZAR ESTADÍSTICAS INCLUYENDO FINALIZADAS
         // ========================================
-        async function actualizarEstadisticasMisiones() {
-            try {
-                const response = await fetch('api/get_estadisticas_misiones.php');
-                const data = await response.json();
+        // Inicializar fechas del filtro al primer día del mes actual
+        function inicializarFiltroFechas() {
+            const hoy = new Date();
+            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            const fmt = d => d.toISOString().split('T')[0];
+            const fi = document.getElementById('filtro-fecha-inicio');
+            const ff = document.getElementById('filtro-fecha-fin');
+            if (fi && !fi.value) fi.value = fmt(primerDia);
+            if (ff && !ff.value) ff.value = fmt(ultimoDia);
+        }
 
+        async function actualizarEstadisticasMisiones() {
+            inicializarFiltroFechas();
+            await cargarEstadisticasDias();
+        }
+
+        async function cargarEstadisticasDias() {
+            const fi = document.getElementById('filtro-fecha-inicio')?.value;
+            const ff = document.getElementById('filtro-fecha-fin')?.value;
+            if (!fi || !ff) return;
+
+            try {
+                const res = await fetch(`api/get_estadisticas_misiones.php?fecha_inicio=${fi}&fecha_fin=${ff}`);
+                const data = await res.json();
+
+                // Actualizar stats de tarjetas
                 if (data.stats) {
                     document.getElementById('stat-total-misiones').textContent = data.stats.total_misiones || 0;
                     document.getElementById('stat-misiones-cortas').textContent = data.stats.misiones_cortas || 0;
@@ -4644,45 +4694,80 @@ try {
                     document.getElementById('stat-misiones-activas').textContent = data.stats.misiones_activas || 0;
                 }
 
-                // Contar misiones finalizadas localmente
-                if (Array.isArray(misiones)) {
-                    const finalizadas = misiones.filter(m =>
-                        m.estado === 'finalizada' || m.estado === 'completada'
-                    ).length;
+                // DAYOFWEEK en MySQL: 1=Dom, 2=Lun, 3=Mar, 4=Mie, 5=Jue, 6=Vie, 7=Sab
+                const ordenDias = [2, 3, 4, 5, 6, 7, 1]; // Lun→Dom
 
-                    console.log('Misiones finalizadas calculadas:', finalizadas);
+                const tbody = document.getElementById('tbody-estadisticas-dias');
+                if (!tbody || !Array.isArray(data.por_dia)) return;
 
-                    // Si existe el elemento de finalizadas, actualizarlo
-                    const estatFinalizadas = document.getElementById('stat-misiones-finalizadas');
-                    if (estatFinalizadas) {
-                        estatFinalizadas.textContent = finalizadas;
-                    }
+                if (data.por_dia.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:2rem; color:var(--text-secondary);">
+                        Sin datos para el rango seleccionado</td></tr>`;
+                    return;
                 }
 
-                // Actualizar tabla de estadísticas por custodio
-                if (data.estadisticas_custodios) {
-                    const tbody = document.querySelector('#tabla-estadisticas-custodios tbody');
-                    if (tbody) {
-                        let html = '';
-                        data.estadisticas_custodios.forEach(custodio => {
-                            html += `<tr>
-                        <td>${custodio.nombre || '-'}</td>
-                        <td>${custodio.total_misiones || 0}</td>
-                        <td>${custodio.misiones_cortas || 0}</td>
-                        <td>${custodio.misiones_largas || 0}</td>
-                        <td>${custodio.horas_totales || 0} h</td>
-                        <td>
-                            <button class="btn btn-primary" onclick="verHistorialCustodio(${custodio.id})" style="padding: 0.5rem 1rem;">
-                                <i class="fas fa-history"></i> Ver
-                            </button>
-                        </td>
+                let html = '';
+                data.por_dia.forEach((custodio, idx) => {
+                    const bg = idx % 2 === 0 ? 'var(--bg-secondary)' : 'var(--bg-card)';
+                    const total = custodio.total || 0;
+
+                    let celdasDias = '';
+                    ordenDias.forEach(numDia => {
+                        const dia = custodio.dias[numDia];
+                        if (!dia || dia.total === 0) {
+                            celdasDias += `<td style="text-align:center; padding:0.6rem 0.5rem;">—</td>`;
+                        } else {
+                            const tiposLimpios = (dia.tipos || '').replace(/null-?|null/gi, '').replace(/-+$/, '');
+                            celdasDias += `
+                                <td style="text-align:center; padding:0.5rem;">
+                                    <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">${dia.total}</div>
+                                    <div style="font-size:0.75rem; font-weight:600; color:#3b82f6; margin-top:2px;">${tiposLimpios}</div>
+                                    ${dia.obs ? `<div title="${dia.obs}" style="font-size:0.65rem; color:var(--text-secondary); margin-top:2px; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${dia.obs}</div>` : ''}
+                                </td>`;
+                        }
+                    });
+
+                    html += `
+                        <tr style="background:${bg};">
+                            <td style="font-weight:600; padding:0.75rem; position:sticky; left:0; background:${bg}; z-index:1;">
+                                ${custodio.nombre}
+                            </td>
+                            <td style="text-align:center; font-size:1.2rem; font-weight:700; color:#92400e; background:#fef3c7;">
+                                ${total}
+                            </td>
+                            ${celdasDias}
+                            <td style="text-align:center;">
+                                <button class="btn btn-primary" onclick="verHistorialCustodio(${custodio.id})" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+                                    <i class="fas fa-history"></i> Ver
+                                </button>
+                            </td>
+                        </tr>`;
+                });
+
+                // Fila totales
+                let totalesDias = '';
+                let granTotal = 0;
+                ordenDias.forEach(numDia => {
+                    let sumDia = 0;
+                    data.por_dia.forEach(c => {
+                        sumDia += c.dias[numDia]?.total || 0;
+                    });
+                    granTotal += sumDia;
+                    totalesDias += `<td style="text-align:center; font-weight:700; background:#fef9c3; padding:0.6rem;">${sumDia || '—'}</td>`;
+                });
+
+                html += `
+                    <tr style="border-top:2px solid var(--border);">
+                        <td style="font-weight:700; padding:0.75rem; position:sticky; left:0; background:#fef9c3; z-index:1;">TOTAL</td>
+                        <td style="text-align:center; font-size:1.2rem; font-weight:700; color:#92400e; background:#fde68a;">${granTotal}</td>
+                        ${totalesDias}
+                        <td></td>
                     </tr>`;
-                        });
-                        tbody.innerHTML = html;
-                    }
-                }
-            } catch (error) {
-                console.error('Error actualizando estadísticas:', error);
+
+                tbody.innerHTML = html;
+
+            } catch (err) {
+                console.error('Error cargando estadísticas por día:', err);
             }
         }
 
@@ -4774,7 +4859,7 @@ try {
         }
 
 
-        // Actualizar estadísticas de misiones
+        /*// Actualizar estadísticas de misiones
         async function actualizarEstadisticasMisiones() {
             try {
                 const response = await fetch('api/get_estadisticas_misiones.php');
@@ -4812,7 +4897,7 @@ try {
             } catch (error) {
                 console.error('Error actualizando estadísticas:', error);
             }
-        }
+        }*/
 
 
 

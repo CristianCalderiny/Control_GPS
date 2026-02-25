@@ -49,35 +49,23 @@ try {
         exit;
     }
 
-    // Obtener el primer GPS disponible
-    $stmtGPS = $conn->prepare("SELECT id FROM gps_dispositivos WHERE estado = 'disponible' LIMIT 1");
-    $stmtGPS->execute();
-    $gpsRow = $stmtGPS->fetch(PDO::FETCH_ASSOC);
-    if (!$gpsRow) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'No hay GPS disponibles para asignar']);
-        exit;
-    }
-    $gps_id = $gpsRow['id'];
 
     // ✅ CORREGIDO: descripcion y observaciones en columnas SEPARADAS
     $sql = "INSERT INTO misiones (
                 custodio_id,
-                gps_id,
                 tipo_mision,
                 descripcion,
                 observaciones,
                 fecha_inicio,
                 estado
-            ) VALUES (?, ?, ?, ?, ?, NOW(), 'pendiente')";
+            ) VALUES (?, ?, ?, ?, NOW(), 'pendiente')";
 
     $stmt = $conn->prepare($sql);
     $resultado = $stmt->execute([
         $custodio_id,
-        $gps_id,
         $tipo_mision,
-        $descripcion,          // ← solo la descripción
-        $observaciones ?: null // ← solo las observaciones
+        $descripcion,
+        $observaciones ?: null
     ]);
 
     if ($resultado) {
@@ -87,14 +75,12 @@ try {
             'success'       => true,
             'message'       => 'Misión creada correctamente',
             'mision_id'     => $mision_id,
-            'codigo_mision' => 'MIS-' . strtoupper($tipo_mision[0]) . '-' . $mision_id,
-            'gps_id'        => $gps_id
+            'codigo_mision' => 'MIS-' . strtoupper($tipo_mision[0]) . '-' . $mision_id
         ]);
     } else {
         http_response_code(500);
         echo json_encode(['success' => false, 'message' => 'Error al crear la misión']);
     }
-
 } catch (PDOException $e) {
     error_log("Error en add_mision.php: " . $e->getMessage());
     http_response_code(500);
@@ -104,4 +90,3 @@ try {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Error: ' . $e->getMessage()]);
 }
-?>

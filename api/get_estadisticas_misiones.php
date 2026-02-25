@@ -1,57 +1,92 @@
 <?php
 session_start();
-header('Content-Type: application/json; charset=utf-8');
-
 if (!isset($_SESSION['usuario_id'])) {
     http_response_code(401);
-    echo json_encode(['error' => 'No autorizado']);
+    echo json_encode(['error' => 'No autenticado']);
     exit;
 }
-
-require_once '../conexion/db.php';
+require_once __DIR__ . '/../conexion/db.php';
 
 try {
-    // Estadísticas generales
-    $sqlStats = "SELECT 
-        COUNT(*) as total_misiones,
-        SUM(CASE WHEN tipo_mision = 'corta' THEN 1 ELSE 0 END) as misiones_cortas,
-        SUM(CASE WHEN tipo_mision = 'larga' THEN 1 ELSE 0 END) as misiones_largas,
-        SUM(CASE WHEN estado IN ('posicionado', 'en_ruta') THEN 1 ELSE 0 END) as misiones_activas
-    FROM misiones";
+    $fechaInicio = $_GET['fecha_inicio'] ?? date('Y-m-01');
+    $fechaFin    = $_GET['fecha_fin']    ?? date('Y-m-t');
 
-    $stmtStats = $conn->prepare($sqlStats);
-    $stmtStats->execute();
+    // Stats generales
+    $stmtStats = $conn->prepare("
+        SELECT
+            COUNT(*) as total_misiones,
+            SUM(tipo_mision = 'corta') as misiones_cortas,
+            SUM(tipo_mision = 'larga') as misiones_largas,
+            SUM(estado NOT IN ('completada','cancelada','finalizada')) as misiones_activas
+        FROM misiones
+        WHERE DATE(fecha_inicio) BETWEEN ? AND ?
+    ");
+    $stmtStats->execute([$fechaInicio, $fechaFin]);
     $stats = $stmtStats->fetch(PDO::FETCH_ASSOC);
 
-    // Estadísticas por custodio
-    $sqlCustodios = "SELECT 
-        c.id,
-        c.nombre,
-        COUNT(m.id) as total_misiones,
-        SUM(CASE WHEN m.tipo_mision = 'corta' THEN 1 ELSE 0 END) as misiones_cortas,
-        SUM(CASE WHEN m.tipo_mision = 'larga' THEN 1 ELSE 0 END) as misiones_largas,
-        COALESCE(SUM(CASE 
-            WHEN m.tipo_mision = 'corta' THEN 4
-            WHEN m.tipo_mision = 'larga' THEN 8
-            ELSE 0
-        END), 0) as horas_totales
-    FROM custodios c
-    LEFT JOIN misiones m ON c.id = m.custodio_id
-    GROUP BY c.id, c.nombre
-    ORDER BY c.nombre";
+    // Misiones por custodio y día de semana
+    $stmtDias = $conn->prepare("
+        SELECT
+            c.id,
+            c.nombre,
+            DAYOFWEEK(m.fecha_inicio) as dia_num,
+            COUNT(*) as total_dia,
+            SUM(m.tipo_mision = 'corta') as cortas_dia,
+            SUM(m.tipo_mision = 'larga') as largas_dia,
+            GROUP_CONCAT(
+                CASE 
+                    WHEN m.tipo_mision = 'corta' THEN 'MC'
+                    ELSE 'ML'
+                END
+                ORDER BY m.fecha_inicio
+                SEPARATOR '-'
+            ) as tipos_dia,
+            GROUP_CONCAT(
+                NULLIF(m.observaciones, '')
+                ORDER BY m.fecha_inicio
+                SEPARATOR ' | '
+            ) as obs_dia
+        FROM custodios c
+        LEFT JOIN misiones m ON m.custodio_id = c.id
+            AND DATE(m.fecha_inicio) BETWEEN ? AND ?
+        WHERE c.estado = 'activo'
+        GROUP BY c.id, c.nombre, DAYOFWEEK(m.fecha_inicio)
+        ORDER BY c.nombre, dia_num
+    ");
+    $stmtDias->execute([$fechaInicio, $fechaFin]);
+    $filas = $stmtDias->fetchAll(PDO::FETCH_ASSOC);
 
-    $stmtCustodios = $conn->prepare($sqlCustodios);
-    $stmtCustodios->execute();
-    $estadisticas_custodios = $stmtCustodios->fetchAll(PDO::FETCH_ASSOC);
+    // Armar estructura por custodio
+    $custodios = [];
+    foreach ($filas as $f) {
+        $id = $f['id'];
+        if (!isset($custodios[$id])) {
+            $custodios[$id] = [
+                'id'     => $id,
+                'nombre' => $f['nombre'],
+                'total'  => 0,
+                'dias'   => [] // 1=dom,2=lun,...,7=sab → reordenamos
+            ];
+        }
+        if ($f['dia_num'] !== null) {
+            $custodios[$id]['dias'][$f['dia_num']] = [
+                'total' => (int)$f['total_dia'],
+                'tipos' => $f['tipos_dia'] ?? '',
+                'obs'   => $f['obs_dia']   ?? ''
+            ];
+            $custodios[$id]['total'] += (int)$f['total_dia'];
+        }
+    }
 
     echo json_encode([
-        'stats' => $stats,
-        'estadisticas_custodios' => $estadisticas_custodios
+        'success'    => true,
+        'stats'      => $stats,
+        'por_dia'    => array_values($custodios),
+        'fecha_inicio' => $fechaInicio,
+        'fecha_fin'    => $fechaFin
     ]);
 
 } catch (PDOException $e) {
-    error_log("Error en get_estadisticas_misiones.php: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => $e->getMessage()]);
 }
-?>
