@@ -2288,51 +2288,83 @@ try {
             <!-- ESTADÍSTICAS POR CUSTODIO -->
             <!-- ESTADÍSTICAS POR CUSTODIO -->
             <div class="card" style="margin-top: 2rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
-                    <h3 style="font-size:1.25rem; font-weight:700; margin:0;">
-                        <i class="fas fa-chart-bar"></i> Estadísticas por Custodio
-                    </h3>
-                    <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap;">
+
+                <!-- HEADER CON FILTROS -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+                    <div>
+                        <h3 style="font-size:1.25rem; font-weight:700; margin:0 0 0.25rem 0;">
+                            <i class="fas fa-chart-bar" style="color:var(--primary);"></i> Estadísticas por Custodio
+                        </h3>
+                        <p style="font-size:0.8rem; color:var(--text-secondary); margin:0;" id="label-rango-semana">Semana actual</p>
+                    </div>
+
+                    <div style="display:flex; gap:0.5rem; align-items:flex-end; flex-wrap:wrap;">
+                        <!-- Semana actual -->
+                        <button onclick="normalizarSemana()" title="Ver semana actual"
+                            style="display:flex; align-items:center; gap:0.4rem; padding:0.55rem 1rem; background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; color:var(--text-primary); font-size:0.85rem; font-weight:600; cursor:pointer; transition:all 0.2s; white-space:nowrap;"
+                            onmouseover="this.style.background='var(--primary)'; this.style.color='white'; this.style.borderColor='var(--primary)';"
+                            onmouseout="this.style.background='var(--bg-secondary)'; this.style.color='var(--text-primary)'; this.style.borderColor='var(--border)';">
+                            <i class="fas fa-calendar-week"></i> Semana actual
+                        </button>
+
+                        <!-- Desde -->
                         <div>
-                            <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Desde</label>
-                            <input type="date" id="filtro-fecha-inicio" class="form-input" style="padding:0.5rem 0.75rem; font-size:0.9rem; width:160px;">
+                            <label style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.3px;">Desde</label>
+                            <input type="date" id="filtro-fecha-inicio" class="form-input"
+                                style="padding:0.55rem 0.75rem; font-size:0.875rem; width:155px; border-radius:10px;">
                         </div>
+
+                        <!-- Hasta -->
                         <div>
-                            <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.25rem;">Hasta</label>
-                            <input type="date" id="filtro-fecha-fin" class="form-input" style="padding:0.5rem 0.75rem; font-size:0.9rem; width:160px;">
+                            <label style="font-size:0.75rem; font-weight:600; color:var(--text-secondary); display:block; margin-bottom:0.3rem; text-transform:uppercase; letter-spacing:0.3px;">Hasta</label>
+                            <input type="date" id="filtro-fecha-fin" class="form-input"
+                                style="padding:0.55rem 0.75rem; font-size:0.875rem; width:155px; border-radius:10px;">
                         </div>
-                        <div style="margin-top:1.2rem;">
-                            <button onclick="cargarEstadisticasDias()" class="btn btn-primary" style="padding:0.6rem 1.25rem;">
-                                <i class="fas fa-search"></i> Filtrar
-                            </button>
-                        </div>
+
+                        <!-- Filtrar -->
+                        <button onclick="cargarEstadisticasDias()" class="btn btn-primary"
+                            style="padding:0.55rem 1.25rem; border-radius:10px; font-weight:600; white-space:nowrap;">
+                            <i class="fas fa-search"></i> Filtrar
+                        </button>
                     </div>
                 </div>
 
-                <!-- Leyenda -->
-                <div style="display:flex; gap:1rem; margin-bottom:1rem; flex-wrap:wrap;">
-                    <span style="font-size:0.8rem; background:#dbeafe; color:#1e40af; padding:0.25rem 0.75rem; border-radius:6px; font-weight:600;">MC = Misión Corta</span>
-                    <span style="font-size:0.8rem; background:#d1fae5; color:#065f46; padding:0.25rem 0.75rem; border-radius:6px; font-weight:600;">ML = Misión Larga</span>
+                <!-- LEYENDA -->
+                <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center;">
+                    <span style="font-size:0.78rem; background:#dbeafe; color:#1e40af; padding:0.3rem 0.85rem; border-radius:20px; font-weight:700; border:1px solid #bfdbfe;">
+                        <i class="fas fa-bolt" style="font-size:0.7rem;"></i> MC = Misión Corta
+                    </span>
+                    <span style="font-size:0.78rem; background:#d1fae5; color:#065f46; padding:0.3rem 0.85rem; border-radius:20px; font-weight:700; border:1px solid #a7f3d0;">
+                        <i class="fas fa-mountain" style="font-size:0.7rem;"></i> ML = Misión Larga
+                    </span>
                 </div>
 
+
+
+
                 <div class="table-container">
-                    <table id="tabla-estadisticas-custodios" style="font-size:0.85rem; min-width:900px;">
+
+                    <table id="tabla-estadisticas-custodios" style="font-size:0.85rem; min-width:900px; border-collapse:separate; border-spacing:0;">
                         <thead>
                             <tr>
-                                <th style="min-width:140px; position:sticky; left:0; z-index:11; background:var(--bg-secondary);">CUSTODIO</th>
-                                <th style="text-align:center; background:#fef3c7; color:#92400e;">TOTAL</th>
-                                <th style="text-align:center;">LUNES</th>
-                                <th style="text-align:center;">MARTES</th>
-                                <th style="text-align:center;">MIÉRCOLES</th>
-                                <th style="text-align:center;">JUEVES</th>
-                                <th style="text-align:center;">VIERNES</th>
-                                <th style="text-align:center;">SÁBADO</th>
-                                <th style="text-align:center;">DOMINGO</th>
-                                <th style="text-align:center;">ACCIONES</th>
+                                <th style="min-width:160px; position:sticky; left:0; z-index:11; background:var(--bg-secondary); padding:0.85rem 1rem; text-align:left; border-bottom:2px solid var(--primary);">CUSTODIO</th>
+                                <th style="text-align:center; background:linear-gradient(135deg,#f59e0b,#d97706); color:white; padding:0.85rem 1rem; border-bottom:2px solid #d97706; min-width:70px;">TOTAL</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px;">LUNES</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px;">MARTES</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px;">MIÉRCOLES</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px;">JUEVES</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px;">VIERNES</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px; background:rgba(59,130,246,0.05);">SÁBADO</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border); min-width:95px; background:rgba(59,130,246,0.05);">DOMINGO</th>
+                                <th style="text-align:center; padding:0.85rem 0.75rem; border-bottom:2px solid var(--border);">ACCIONES</th>
                             </tr>
                         </thead>
                         <tbody id="tbody-estadisticas-dias"></tbody>
                     </table>
+
+
+
+
                 </div>
             </div>
 
@@ -4661,15 +4693,69 @@ try {
         // ACTUALIZAR ESTADÍSTICAS INCLUYENDO FINALIZADAS
         // ========================================
         // Inicializar fechas del filtro al primer día del mes actual
-        function inicializarFiltroFechas() {
+        // Formatea fecha local SIN conversión UTC
+        function fmtFecha(d) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${dd}`;
+        }
+
+        function getSemanaActual() {
             const hoy = new Date();
-            const primerDia = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-            const ultimoDia = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
-            const fmt = d => d.toISOString().split('T')[0];
+            const dia = hoy.getDay(); // 0=dom,1=lun,...6=sab
+            const difL = (dia === 0) ? -6 : 1 - dia; // días desde lunes
+            const lunes = new Date(hoy);
+            lunes.setDate(hoy.getDate() + difL);
+            const domingo = new Date(lunes);
+            domingo.setDate(lunes.getDate() + 6);
+            return {
+                inicio: fmtFecha(lunes),
+                fin: fmtFecha(domingo)
+            };
+        }
+
+        function getMesActual() {
+            const hoy = new Date();
+            const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+            const fin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+            return {
+                inicio: fmtFecha(inicio),
+                fin: fmtFecha(fin)
+            };
+        }
+
+        function inicializarFiltroFechas() {
             const fi = document.getElementById('filtro-fecha-inicio');
             const ff = document.getElementById('filtro-fecha-fin');
-            if (fi && !fi.value) fi.value = fmt(primerDia);
-            if (ff && !ff.value) ff.value = fmt(ultimoDia);
+            if (fi && !fi.value && ff && !ff.value) {
+                // Por defecto: mes completo (para que haya datos visibles)
+                const mes = getMesActual();
+                fi.value = mes.inicio;
+                ff.value = mes.fin;
+                actualizarLabelSemana(mes.inicio, mes.fin);
+            }
+        }
+
+        function normalizarSemana() {
+            const sem = getSemanaActual();
+            const fi = document.getElementById('filtro-fecha-inicio');
+            const ff = document.getElementById('filtro-fecha-fin');
+            if (fi) fi.value = sem.inicio;
+            if (ff) ff.value = sem.fin;
+            actualizarLabelSemana(sem.inicio, sem.fin);
+            cargarEstadisticasDias();
+        }
+
+        function actualizarLabelSemana(inicio, fin) {
+            const label = document.getElementById('label-rango-semana');
+            if (!label) return;
+            const fmt = s => new Date(s + 'T12:00:00').toLocaleDateString('es-HN', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+            label.textContent = fmt(inicio) + ' — ' + fmt(fin);
         }
 
         async function actualizarEstadisticasMisiones() {
@@ -4681,6 +4767,7 @@ try {
             const fi = document.getElementById('filtro-fecha-inicio')?.value;
             const ff = document.getElementById('filtro-fecha-fin')?.value;
             if (!fi || !ff) return;
+            actualizarLabelSemana(fi, ff);
 
             try {
                 const res = await fetch(`api/get_estadisticas_misiones.php?fecha_inicio=${fi}&fecha_fin=${ff}`);
@@ -4707,6 +4794,8 @@ try {
                 }
 
                 let html = '';
+                const esFinde = [7, 1]; // sábado=7, domingo=1 en DAYOFWEEK
+
                 data.por_dia.forEach((custodio, idx) => {
                     const bg = idx % 2 === 0 ? 'var(--bg-secondary)' : 'var(--bg-card)';
                     const total = custodio.total || 0;
@@ -4714,15 +4803,22 @@ try {
                     let celdasDias = '';
                     ordenDias.forEach(numDia => {
                         const dia = custodio.dias[numDia];
+                        const esFindeSemana = esFinde.includes(numDia);
+                        const bgDia = esFindeSemana ? 'rgba(59,130,246,0.04)' : 'transparent';
                         if (!dia || dia.total === 0) {
-                            celdasDias += `<td style="text-align:center; padding:0.6rem 0.5rem;">—</td>`;
+                            celdasDias += `<td style="text-align:center; padding:0.65rem 0.5rem; background:${bgDia}; color:var(--text-secondary);">—</td>`;
                         } else {
-                            const tiposLimpios = (dia.tipos || '').replace(/null-?|null/gi, '').replace(/-+$/, '');
+                            const tiposLimpios = (dia.tipos || '').replace(/null-?|null/gi, '').replace(/-+$|^-+/g, '');
+                            const tieneMC = tiposLimpios.includes('MC');
+                            const tieneML = tiposLimpios.includes('ML');
+                            const colorTipo = tieneMC && tieneML ? '#8b5cf6' : tieneMC ? '#3b82f6' : '#10b981';
                             celdasDias += `
-                                <td style="text-align:center; padding:0.5rem;">
-                                    <div style="font-size:1.1rem; font-weight:700; color:var(--text-primary);">${dia.total}</div>
-                                    <div style="font-size:0.75rem; font-weight:600; color:#3b82f6; margin-top:2px;">${tiposLimpios}</div>
-                                    ${dia.obs ? `<div title="${dia.obs}" style="font-size:0.65rem; color:var(--text-secondary); margin-top:2px; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${dia.obs}</div>` : ''}
+                                <td style="text-align:center; padding:0.5rem; background:${bgDia};">
+                                    <div style="display:inline-flex; flex-direction:column; align-items:center; gap:3px; background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:0.4rem 0.6rem; min-width:54px; box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                                        <span style="font-size:1.15rem; font-weight:800; color:var(--text-primary); line-height:1;">${dia.total}</span>
+                                        <span style="font-size:0.7rem; font-weight:700; color:${colorTipo}; letter-spacing:0.3px;">${tiposLimpios}</span>
+                                        ${dia.obs ? `<span title="${dia.obs}" style="font-size:0.6rem; color:var(--text-secondary); max-width:70px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${dia.obs}</span>` : ''}
+                                    </div>
                                 </td>`;
                         }
                     });
@@ -4753,15 +4849,16 @@ try {
                         sumDia += c.dias[numDia]?.total || 0;
                     });
                     granTotal += sumDia;
-                    totalesDias += `<td style="text-align:center; font-weight:700; background:#fef9c3; padding:0.6rem;">${sumDia || '—'}</td>`;
+                    const esFindeTotal = esFinde.includes(numDia);
+                    totalesDias += `<td style="text-align:center; font-weight:700; background:${esFindeTotal ? '#eff6ff' : '#fef9c3'}; padding:0.65rem; font-size:0.95rem;">${sumDia || '—'}</td>`;
                 });
 
                 html += `
-                    <tr style="border-top:2px solid var(--border);">
-                        <td style="font-weight:700; padding:0.75rem; position:sticky; left:0; background:#fef9c3; z-index:1;">TOTAL</td>
-                        <td style="text-align:center; font-size:1.2rem; font-weight:700; color:#92400e; background:#fde68a;">${granTotal}</td>
+                    <tr style="border-top:3px solid var(--primary);">
+                        <td style="font-weight:800; padding:0.85rem 1rem; position:sticky; left:0; background:linear-gradient(135deg,#fef9c3,#fef3c7); z-index:1; font-size:0.9rem; letter-spacing:0.5px; text-transform:uppercase;">TOTAL</td>
+                        <td style="text-align:center; font-size:1.3rem; font-weight:800; color:white; background:linear-gradient(135deg,#f59e0b,#d97706);">${granTotal}</td>
                         ${totalesDias}
-                        <td></td>
+                        <td style="background:var(--bg-secondary);"></td>
                     </tr>`;
 
                 tbody.innerHTML = html;
