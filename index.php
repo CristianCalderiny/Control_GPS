@@ -2330,6 +2330,15 @@ try {
                 </div>
 
                 <!-- LEYENDA -->
+                <!-- BÚSQUEDA POR CUSTODIO -->
+                <div style="margin-bottom:1rem; position:relative; max-width:320px;">
+                    <i class="fas fa-search" style="position:absolute; left:0.85rem; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-size:0.9rem; pointer-events:none;"></i>
+                    <input type="text" id="buscar-custodio-stats"
+                        placeholder="Buscar custodio... Ej: ju pe"
+                        oninput="filtrarCustodioStats(this.value)"
+                        class="form-input"
+                        style="padding:0.6rem 0.75rem 0.6rem 2.5rem; border-radius:10px; font-size:0.875rem; width:100%;">
+                </div>
                 <div style="display:flex; gap:0.75rem; margin-bottom:1.25rem; flex-wrap:wrap; align-items:center;">
                     <span style="font-size:0.78rem; background:#dbeafe; color:#1e40af; padding:0.3rem 0.85rem; border-radius:20px; font-weight:700; border:1px solid #bfdbfe;">
                         <i class="fas fa-bolt" style="font-size:0.7rem;"></i> MC = Misión Corta
@@ -4735,6 +4744,23 @@ try {
                 ff.value = mes.fin;
                 actualizarLabelSemana(mes.inicio, mes.fin);
             }
+        }
+
+        function filtrarCustodioStats(termino) {
+            const palabras = termino.toLowerCase().trim().split(/\s+/).filter(Boolean);
+            const filas = document.querySelectorAll('#tbody-estadisticas-dias tr');
+
+            filas.forEach(fila => {
+                // Ignorar fila de totales
+                if (fila.querySelector('td')?.textContent?.trim() === 'TOTAL') return;
+
+                const nombre = fila.querySelector('td')?.textContent?.toLowerCase() || '';
+
+                // Todas las palabras deben estar presentes en el nombre (LIKE %p1% AND %p2%)
+                const coincide = palabras.every(p => nombre.includes(p));
+
+                fila.style.display = (palabras.length === 0 || coincide) ? '' : 'none';
+            });
         }
 
         function normalizarSemana() {
