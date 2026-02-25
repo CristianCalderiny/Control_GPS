@@ -42,28 +42,29 @@ try {
     // OBTENER ASIGNACIONES A CLIENTES
     $sqlClientes = "
         SELECT 
-            acg.id,
-            acg.gps_id,
-            NULL as custodio_id,
-            acg.cliente,
-            acg.origen,
-            acg.destino,
-            acg.observaciones,
-            acg.fecha_asignacion,
-            acg.estado,
-            gd.imei,
-            gd.marca,
-            gd.modelo,
-            CONCAT('Cliente: ', acg.cliente) as custodio_nombre,
-            acg.piloto as custodio_telefono,
-            DATEDIFF(NOW(), acg.fecha_asignacion) as dias_asignado,
-            'cliente' as tipo_asignacion,
-            acg.piloto,
-            acg.placa,
-            acg.contenedor
-        FROM asignaciones_cliente_gps acg
-        INNER JOIN gps_dispositivos gd ON acg.gps_id = gd.id
-        ORDER BY acg.fecha_asignacion DESC
+    acg.id,
+    acg.gps_id,
+    NULL as custodio_id,
+    acg.cliente,
+    acg.origen,
+    acg.destino,
+    acg.observaciones,
+    acg.fecha_asignacion,
+    acg.estado,
+    gd.imei,
+    gd.marca,
+    gd.modelo,
+    CONCAT('Cliente: ', acg.cliente) as custodio_nombre,
+    acg.telefono as custodio_telefono,   -- ✅ ANTES era acg.piloto
+    DATEDIFF(NOW(), acg.fecha_asignacion) as dias_asignado,
+    'cliente' as tipo_asignacion,
+    acg.piloto,
+    acg.placa,
+    acg.contenedor,
+    acg.telefono as telefono             -- ✅ NUEVO: para el modal de Ver
+FROM asignaciones_cliente_gps acg
+INNER JOIN gps_dispositivos gd ON acg.gps_id = gd.id
+ORDER BY acg.fecha_asignacion DESC
     ";
 
     $stmtClientes = $conn->prepare($sqlClientes);

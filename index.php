@@ -1586,9 +1586,14 @@ try {
     <div class="notification-panel" id="notification-panel">
         <div class="notification-header">
             <h3><i class="fas fa-bell"></i> Notificaciones</h3>
-            <button class="btn btn-secondary" onclick="toggleNotificaciones()" style="padding: 0.5rem 1rem;">
-                <i class="fas fa-times"></i>
-            </button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="limpiarTodasNotificaciones()" style="padding: 0.5rem 1rem; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+                    <i class="fas fa-trash-alt"></i> Limpiar
+                </button>
+                <button class="btn btn-secondary" onclick="toggleNotificaciones()" style="padding: 0.5rem 1rem;">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
         <div class="notification-list" id="notification-list">
             <div class="notification-item">
@@ -2165,13 +2170,13 @@ try {
                     <table id="tabla-historial">
                         <thead>
                             <tr>
-                                <th>IMEI/Serie</th>
-                                <th>Custodio</th>
-                                <th>Cliente</th>
-                                <th>Origen</th>
-                                <th>Destino</th>
-                                <th>Fecha Asignación</th>
-                                <th>Estado</th>
+                                <th onclick="ordenarHistorial('imei')" style="cursor:pointer; user-select:none;">IMEI/Serie <span id="sort-imei">↕</span></th>
+                                <th onclick="ordenarHistorial('custodio')" style="cursor:pointer; user-select:none;">Custodio <span id="sort-custodio">↕</span></th>
+                                <th onclick="ordenarHistorial('cliente')" style="cursor:pointer; user-select:none;">Cliente <span id="sort-cliente">↕</span></th>
+                                <th onclick="ordenarHistorial('origen')" style="cursor:pointer; user-select:none;">Origen <span id="sort-origen">↕</span></th>
+                                <th onclick="ordenarHistorial('destino')" style="cursor:pointer; user-select:none;">Destino <span id="sort-destino">↕</span></th>
+                                <th onclick="ordenarHistorial('fecha')" style="cursor:pointer; user-select:none;">Fecha Asignación <span id="sort-fecha">↓</span></th>
+                                <th onclick="ordenarHistorial('estado')" style="cursor:pointer; user-select:none;">Estado <span id="sort-estado">↕</span></th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -2641,10 +2646,25 @@ try {
             document.querySelectorAll('.module-content').forEach(module => module.classList.add('hidden'));
             document.getElementById('module-' + moduleName).classList.remove('hidden');
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.nav-item').classList.add('active');
+
+            // ✅ Solo intentar marcar el nav si hay un evento de clic real
+            if (typeof event !== 'undefined' && event && event.target) {
+                const navItem = event.target.closest('.nav-item');
+                if (navItem) navItem.classList.add('active');
+            } else {
+                // Llamada programática (ej: irARetornar) → marcar nav manualmente
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    if (item.getAttribute('onclick')?.includes(`'${moduleName}'`)) {
+                        item.classList.add('active');
+                    }
+                });
+            }
 
             if (moduleName === 'alertas') {
                 actualizarAlertasRecuperacion();
+            }
+            if (moduleName === 'misiones') {
+                cargarMisiones();
             }
         }
 
@@ -3284,38 +3304,20 @@ try {
 
         // ACTUALIZAR TABLA DE HISTORIAL PARA INCLUIR CLIENTES
         function actualizarTablaHistorial() {
-            console.log('Actualizando tabla historial con datos:', asignaciones);
             const tbody = document.querySelector('#tabla-historial tbody');
-
             if (!Array.isArray(asignaciones) || asignaciones.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;"><div class="empty-state"><i class="fas fa-history"></i><h3>No hay historial</h3><p>Las asignaciones aparecerán aquí</p></div></td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">
+            <div class="empty-state">
+                <i class="fas fa-history"></i>
+                <h3>No hay historial</h3>
+                <p>Las asignaciones aparecerán aquí</p>
+            </div>
+        </td></tr>`;
                 return;
             }
-
-            let html = '';
-            asignaciones.slice().reverse().forEach(asignacion => {
-                const estadoClass = asignacion.estado === 'asignado' ? 'badge-warning' : 'badge-success';
-                const estadoTexto = asignacion.estado ? asignacion.estado.charAt(0).toUpperCase() + asignacion.estado.slice(1) : 'N/A';
-                const fechaObj = new Date(asignacion.fecha_asignacion);
-                const fechaFormato = fechaObj.toLocaleString('es-HN');
-
-                const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
-                const custodioInfo = tipoAsignacion === 'cliente' ?
-                    `${asignacion.cliente} (Cliente)` :
-                    asignacion.custodio_nombre;
-
-                html += `<tr>
-            <td style="font-family: monospace;">${asignacion.imei || 'N/A'}</td>
-            <td>${custodioInfo || 'N/A'}</td>
-            <td>${asignacion.cliente || '-'}</td>
-            <td>${asignacion.origen || '-'}</td>
-            <td>${asignacion.destino || '-'}</td>
-            <td>${fechaFormato}</td>
-            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
-        </tr>`;
-            });
-            tbody.innerHTML = html;
+            renderHistorialOrdenado(); // ← usa el ordenamiento actual
         }
+
         // NUEVA FUNCIÓN para ver detalles de asignación
         function verDetallesAsignacion(asignacionId, tipoAsignacion) {
             const asignacion = asignaciones.find(a => parseInt(a.id) === parseInt(asignacionId));
@@ -3325,143 +3327,115 @@ try {
 
             if (tipoAsignacion === 'cliente') {
                 html = `
-            <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
-                <div class="modal-content" style="max-width: 600px; margin: auto;">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #3b82f6, #1e40af); color: white; border-radius: 20px 20px 0 0;">
-                        <h3><i class="fas fa-building"></i> Asignación a Cliente</h3>
-                        <button class="close-modal" onclick="cerrarDetallesAsignacion()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white;">
-                            <i class="fas fa-times"></i>
-                        </button>
+    <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
+        <div class="modal-content" style="max-width: 580px; margin: auto; border-radius: 24px; overflow: hidden;">
+            
+            <!-- HEADER -->
+            <div style="background: linear-gradient(135deg, #1d4ed8, #3b82f6); padding: 1.75rem 2rem; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🚚</div>
+                    <div>
+                        <h3 style="margin: 0; color: white; font-size: 1.15rem; font-weight: 700;">Asignación a Cliente</h3>
+                        <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 0.8rem;">Transporte / Logística</p>
                     </div>
-                    <div class="modal-body" style="padding: 2rem;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">IMEI</p>
-                                <p style="font-family: monospace; font-weight: 700;">${asignacion.imei}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">MARCA/MODELO</p>
-                                <p style="font-weight: 700;">${asignacion.marca} ${asignacion.modelo}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CLIENTE</p>
-                                <p style="font-weight: 700;">${asignacion.cliente}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">PILOTO</p>
-                                <p style="font-weight: 700;">${asignacion.piloto || '-'}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">PLACA</p>
-                                <p style="font-weight: 700;">${asignacion.placa || '-'}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CONTENEDOR</p>
-                                <p style="font-weight: 700;">${asignacion.contenedor || '-'}</p>
-                            </div>
+                </div>
+                <button onclick="cerrarDetallesAsignacion()" style="background: rgba(255,255,255,0.15); border: none; color: white; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;">✕</button>
+            </div>
+
+            <div style="padding: 1.75rem 2rem; background: var(--bg-card);">
+
+                <!-- SECCIÓN: GPS -->
+                <div style="margin-bottom: 1.25rem;">
+                    <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">📡 Dispositivo GPS</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">IMEI</p>
+                            <p style="font-family: monospace; font-weight: 700; margin: 0; font-size: 1rem; color: var(--text-primary);">${asignacion.imei}</p>
                         </div>
-
-                        <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--primary);">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">📍 RUTA</p>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                <div>
-                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Origen</p>
-                                    <p style="font-weight: 600;">${asignacion.origen}</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Destino</p>
-                                    <p style="font-weight: 600;">${asignacion.destino}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${asignacion.observaciones ? `
-                            <div style="padding: 1.5rem; background: #fffbeb; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--warning);">
-                                <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.75rem; font-weight: 600;">💬 OBSERVACIONES</p>
-                                <p style="margin: 0; color: #78350f;">${asignacion.observaciones}</p>
-                            </div>
-                        ` : ''}
-
-                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem;">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">📅 FECHA ASIGNACIÓN</p>
-                            <p style="font-weight: 600;">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
-                        </div>
-
-                        <div style="text-align: center;">
-                            <button onclick="cerrarDetallesAsignacion()" class="btn btn-primary" style="padding: 1rem 2rem; font-weight: 700;">
-                                <i class="fas fa-check"></i> Entendido
-                            </button>
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Marca / Modelo</p>
+                            <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.marca} ${asignacion.modelo}</p>
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
-            } else {
-                // Asignación a custodio
-                html = `
-            <div class="modal active" id="modal-detalles-asignacion" style="display: flex !important; z-index: 10000;">
-                <div class="modal-content" style="max-width: 600px; margin: auto;">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border-radius: 20px 20px 0 0;">
-                        <h3><i class="fas fa-user-shield"></i> Asignación a Custodio</h3>
-                        <button class="close-modal" onclick="cerrarDetallesAsignacion()" type="button" style="background: rgba(255, 255, 255, 0.2); color: white;">
-                            <i class="fas fa-times"></i>
-                        </button>
+
+                <!-- SECCIÓN: CLIENTE -->
+                <div style="margin-bottom: 1.25rem;">
+                    <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">🏢 Cliente</p>
+                    <div style="padding: 0.9rem 1rem; background: linear-gradient(135deg, #eff6ff, #dbeafe); border-radius: 12px; border: 1px solid #bfdbfe;">
+                        <p style="font-weight: 700; margin: 0; font-size: 1.1rem; color: #1e40af;">${asignacion.cliente}</p>
                     </div>
-                    <div class="modal-body" style="padding: 2rem;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">IMEI</p>
-                                <p style="font-family: monospace; font-weight: 700;">${asignacion.imei}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">MARCA/MODELO</p>
-                                <p style="font-weight: 700;">${asignacion.marca} ${asignacion.modelo}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CUSTODIO</p>
-                                <p style="font-weight: 700;">${asignacion.custodio_nombre}</p>
-                            </div>
-                            <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px;">
-                                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">CLIENTE</p>
-                                <p style="font-weight: 700;">${asignacion.cliente}</p>
-                            </div>
+                </div>
+
+                <!-- SECCIÓN: PILOTO -->
+                <div style="margin-bottom: 1.25rem;">
+                    <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">👤 Piloto / Conductor</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Nombre</p>
+                            <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.piloto || '—'}</p>
                         </div>
-
-                        <div style="padding: 1.5rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--primary);">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.75rem; font-weight: 600;">📍 RUTA</p>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                <div>
-                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Origen</p>
-                                    <p style="font-weight: 600;">${asignacion.origen}</p>
-                                </div>
-                                <div>
-                                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Destino</p>
-                                    <p style="font-weight: 600;">${asignacion.destino}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        ${asignacion.observaciones ? `
-                            <div style="padding: 1.5rem; background: #fffbeb; border-radius: 12px; margin-bottom: 2rem; border-left: 4px solid var(--warning);">
-                                <p style="font-size: 0.75rem; color: #92400e; margin-bottom: 0.75rem; font-weight: 600;">💬 OBSERVACIONES</p>
-                                <p style="margin: 0; color: #78350f;">${asignacion.observaciones}</p>
-                            </div>
-                        ` : ''}
-
-                        <div style="padding: 1rem; background: var(--bg-secondary); border-radius: 12px; margin-bottom: 2rem;">
-                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem; font-weight: 600;">📅 FECHA ASIGNACIÓN</p>
-                            <p style="font-weight: 600;">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
-                        </div>
-
-                        <div style="text-align: center;">
-                            <button onclick="cerrarDetallesAsignacion()" class="btn btn-primary" style="padding: 1rem 2rem; font-weight: 700;">
-                                <i class="fas fa-check"></i> Entendido
-                            </button>
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">📞 Teléfono</p>
+                            <p style="font-family: monospace; font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.telefono || '—'}</p>
                         </div>
                     </div>
                 </div>
+
+                <!-- SECCIÓN: VEHÍCULO -->
+                <div style="margin-bottom: 1.25rem;">
+                    <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">🚗 Vehículo / Carga</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Placa</p>
+                            <p style="font-family: monospace; font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.placa || '—'}</p>
+                        </div>
+                        <div style="padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Contenedor</p>
+                            <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${asignacion.contenedor || '—'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN: RUTA -->
+                <div style="margin-bottom: 1.25rem;">
+                    <p style="font-size: 0.7rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.75rem 0;">📍 Ruta</p>
+                    <div style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.5rem; align-items: center;">
+                        <div style="padding: 0.9rem 1rem; background: #f0fdf4; border-radius: 12px; border: 1px solid #bbf7d0;">
+                            <p style="font-size: 0.7rem; color: #166534; margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Origen</p>
+                            <p style="font-weight: 700; margin: 0; color: #15803d;">${asignacion.origen}</p>
+                        </div>
+                        <div style="font-size: 1.2rem; color: var(--text-secondary); text-align: center;">→</div>
+                        <div style="padding: 0.9rem 1rem; background: #fef2f2; border-radius: 12px; border: 1px solid #fecaca;">
+                            <p style="font-size: 0.7rem; color: #991b1b; margin: 0 0 0.3rem; font-weight: 600; text-transform: uppercase;">Destino</p>
+                            <p style="font-weight: 700; margin: 0; color: #dc2626;">${asignacion.destino}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OBSERVACIONES (condicional) -->
+                ${asignacion.observaciones ? `
+                <div style="margin-bottom: 1.25rem; padding: 1rem; background: #fffbeb; border-radius: 12px; border-left: 3px solid #f59e0b;">
+                    <p style="font-size: 0.7rem; color: #92400e; margin: 0 0 0.4rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">💬 Observaciones</p>
+                    <p style="margin: 0; color: #78350f; font-size: 0.9rem; line-height: 1.5;">${asignacion.observaciones}</p>
+                </div>` : ''}
+
+                <!-- FECHA -->
+                <div style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1rem; background: var(--bg-secondary); border-radius: 12px; border: 1px solid var(--border);">
+                    <span style="font-size: 1.5rem;">📅</span>
+                    <div>
+                        <p style="font-size: 0.7rem; color: var(--text-secondary); margin: 0 0 0.2rem; font-weight: 600; text-transform: uppercase;">Fecha de Asignación</p>
+                        <p style="font-weight: 700; margin: 0; color: var(--text-primary);">${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</p>
+                    </div>
+                </div>
+
+                <!-- BOTÓN -->
+                <button onclick="cerrarDetallesAsignacion()" style="width: 100%; padding: 1rem; background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer;">
+                    Entendido
+                </button>
             </div>
-        `;
+        </div>
+    </div>`;
             }
 
             document.body.insertAdjacentHTML('beforeend', html);
@@ -3683,7 +3657,7 @@ try {
             }
         }
 
-        function actualizarTablaHistorial() {
+        /*function actualizarTablaHistorial() {
             console.log('Actualizando tabla historial con datos:', asignaciones);
             const tbody = document.querySelector('#tabla-historial tbody');
 
@@ -3710,7 +3684,7 @@ try {
                 </tr>`;
             });
             tbody.innerHTML = html;
-        }
+        }*/
 
         function cargarSelectores() {
             console.log('🔄 Cargando selectores...');
@@ -4543,9 +4517,15 @@ try {
                             <i class="fas fa-edit"></i> Estado
                         </button>
                     ` : ''}
-                    <button class="btn" onclick="verDetallesMision(${mision.id})" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #3b82f6; color: white; border-radius: 8px; border: none; cursor: pointer;">
-                        <i class="fas fa-eye"></i> Ver
-                    </button>
+                    ${(['posicionado', 'en_ruta', 'finalizada', 'completada', 'cancelada'].includes(mision.estado)) ? `
+    <button class="btn" onclick="verDetallesMision(${mision.id})" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #3b82f6; color: white; border-radius: 8px; border: none; cursor: pointer;">
+        <i class="fas fa-eye"></i> Ver
+    </button>
+` : `
+    <button title="Cambia el estado primero para ver detalles" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; background-color: #e2e8f0; color: #94a3b8; border-radius: 8px; border: none; cursor: not-allowed;" disabled>
+        <i class="fas fa-eye-slash"></i> Ver
+    </button>
+`}
                 </div>
             </td>
         </tr>`;
@@ -4709,7 +4689,7 @@ try {
         // ========================================
         // ACTUALIZAR TABLA DE MISIONES (MEJORADO)
         // ========================================
-        function actualizarTablaMisiones() {
+        /* function actualizarTablaMisiones() {
             console.log('Actualizando tabla de misiones con:', misiones);
             const tbody = document.querySelector('#tabla-misiones tbody');
 
@@ -4777,7 +4757,7 @@ try {
         </tr>`;
             });
             tbody.innerHTML = html;
-        }
+        } */
 
         // Filtrar tabla de misiones por búsqueda
         function filtrarTablaMisiones() {
@@ -5016,7 +4996,11 @@ try {
             };
 
             const estadoKey = (mision.estado || '').toLowerCase().replace(' ', '_');
-            const estadoColor = estadoColors[estadoKey] || estadoColors['pendiente'];
+            const estadoColor = estadoColors[estadoKey] || {
+                bg: '#f3f4f6',
+                text: '#6b7280',
+                icon: '⏳'
+            };
 
             // Determinar icono del tipo de misión
             const tipoMision = mision.tipo_mision_id === 1 ? {
@@ -5579,6 +5563,126 @@ try {
             originalActualizarTodo();
             cargarSelectoresCliente();
         };
+
+
+        function limpiarTodasNotificaciones() {
+            const notificationList = document.getElementById('notification-list');
+            const notifBadge = document.getElementById('notif-badge');
+
+            // Limpiar todas las notificaciones del panel
+            notificationList.innerHTML = `
+        <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+            <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;">🔔</div>
+            <p style="font-weight: 600; margin-bottom: 0.25rem;">Sin notificaciones</p>
+            <p style="font-size: 0.85rem;">Las nuevas alertas aparecerán aquí</p>
+        </div>
+    `;
+
+            // Resetear badge
+            notifBadge.textContent = '0';
+            notifBadge.classList.add('hidden');
+
+            // Limpiar registro de notificaciones vistas para que puedan re-aparecer
+            notificacionesVistas = {};
+        }
+
+
+        // Variables de ordenamiento del historial
+        let historialOrdenCol = 'fecha';
+        let historialOrdenDir = 'desc'; // desc = más recientes primero por defecto
+
+        function ordenarHistorial(columna) {
+            if (historialOrdenCol === columna) {
+                historialOrdenDir = historialOrdenDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                historialOrdenCol = columna;
+                historialOrdenDir = columna === 'fecha' ? 'desc' : 'asc';
+            }
+
+            // Actualizar íconos de todas las columnas
+            const cols = ['imei', 'custodio', 'cliente', 'origen', 'destino', 'fecha', 'estado'];
+            cols.forEach(col => {
+                const el = document.getElementById('sort-' + col);
+                if (!el) return;
+                if (col === historialOrdenCol) {
+                    el.textContent = historialOrdenDir === 'asc' ? '↑' : '↓';
+                    el.style.color = 'var(--primary)';
+                } else {
+                    el.textContent = '↕';
+                    el.style.color = 'var(--text-secondary)';
+                }
+            });
+
+            renderHistorialOrdenado();
+        }
+
+        function renderHistorialOrdenado() {
+            const tbody = document.querySelector('#tabla-historial tbody');
+            if (!Array.isArray(asignaciones) || asignaciones.length === 0) return;
+
+            const datos = [...asignaciones].sort((a, b) => {
+                let valA, valB;
+
+                switch (historialOrdenCol) {
+                    case 'imei':
+                        valA = a.imei || '';
+                        valB = b.imei || '';
+                        break;
+                    case 'custodio':
+                        valA = a.custodio_nombre || '';
+                        valB = b.custodio_nombre || '';
+                        break;
+                    case 'cliente':
+                        valA = a.cliente || '';
+                        valB = b.cliente || '';
+                        break;
+                    case 'origen':
+                        valA = a.origen || '';
+                        valB = b.origen || '';
+                        break;
+                    case 'destino':
+                        valA = a.destino || '';
+                        valB = b.destino || '';
+                        break;
+                    case 'estado':
+                        valA = a.estado || '';
+                        valB = b.estado || '';
+                        break;
+                    case 'fecha':
+                        valA = new Date(a.fecha_asignacion).getTime();
+                        valB = new Date(b.fecha_asignacion).getTime();
+                        return historialOrdenDir === 'asc' ? valA - valB : valB - valA;
+                }
+
+                const cmp = valA.localeCompare(valB, 'es', {
+                    sensitivity: 'base'
+                });
+                return historialOrdenDir === 'asc' ? cmp : -cmp;
+            });
+
+            let html = '';
+            datos.forEach(asignacion => {
+                const estadoClass = asignacion.estado === 'asignado' ? 'badge-warning' : 'badge-success';
+                const estadoTexto = asignacion.estado ?
+                    asignacion.estado.charAt(0).toUpperCase() + asignacion.estado.slice(1) :
+                    'N/A';
+                const tipoAsignacion = asignacion.tipo_asignacion || 'custodio';
+                const custodioInfo = tipoAsignacion === 'cliente' ?
+                    `${asignacion.cliente} (Cliente)` :
+                    asignacion.custodio_nombre;
+
+                html += `<tr>
+            <td style="font-family: monospace;">${asignacion.imei || 'N/A'}</td>
+            <td>${custodioInfo || 'N/A'}</td>
+            <td>${asignacion.cliente || '-'}</td>
+            <td>${asignacion.origen || '-'}</td>
+            <td>${asignacion.destino || '-'}</td>
+            <td>${new Date(asignacion.fecha_asignacion).toLocaleString('es-HN')}</td>
+            <td><span class="badge ${estadoClass}">${estadoTexto}</span></td>
+        </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
     </script>
 </body>
 
