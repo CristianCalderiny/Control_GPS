@@ -1650,7 +1650,7 @@ try {
                 <i class="fas fa-clock"></i>
                 <span>Historial</span>
             </button>
-            <button class="nav-item" onclick="showModule('misiones')">
+            <button class="nav-item" onclick="showModule('misiones')" disabled style="opacity: 0.4; cursor: not-allowed; pointer-events: none;">
                 <i class="fas fa-tasks"></i>
                 <span>Gestión de Misiones</span>
             </button>
