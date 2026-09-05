@@ -20,6 +20,7 @@ try {
     $nombre = $_POST['nombre'] ?? '';
     $telefono = $_POST['telefono'] ?? '';
     $cargo = $_POST['cargo'] ?? '';
+    $zona = $_POST['zona'] ?? '';
 
     if (empty($nombre) || empty($telefono) || empty($cargo)) {
         echo json_encode(['success' => false, 'message' => 'Faltan campos requeridos']);
@@ -36,10 +37,10 @@ try {
         exit;
     }
 
-    $sql = "INSERT INTO custodios (nombre, telefono, cargo, estado, created_at, updated_at) 
-            VALUES (?, ?, ?, 'activo', NOW(), NOW())";
+    $sql = "INSERT INTO custodios (nombre, telefono, cargo, zona, estado, created_at, updated_at) 
+            VALUES (?, ?, ?, ?, 'activo', NOW(), NOW())";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$nombre, $telefono, $cargo]);
+    $stmt->execute([$nombre, $telefono, $cargo, $zona ?: null]);
 
     echo json_encode(['success' => true, 'message' => 'Custodio agregado correctamente']);
 } catch (PDOException $e) {

@@ -1,44 +1,18 @@
 <?php
 session_start();
-
-// Auto-login: si ya hay una cookie "recordarme" válida y no hay sesión
-// activa, iniciar sesión automáticamente sin pedir usuario/contraseña.
-if (empty($_SESSION['autenticado']) && !empty($_COOKIE['forza_remember'])) {
-    require 'conexion/db.php';
-
-    $tokenHash = hash('sha256', $_COOKIE['forza_remember']);
-
-    $sql = "SELECT id, usuario, email, rol, nombre_completo
-            FROM usuarios
-            WHERE remember_token = :token
-              AND remember_expira > NOW()
-              AND estado = 'activo'
-            LIMIT 1";
-
-    $stmt = $conn->prepare($sql);
-    $stmt->execute([':token' => $tokenHash]);
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($user) {
-        $_SESSION['usuario_id'] = $user['id'];
-        $_SESSION['usuario'] = $user['usuario'];
-        $_SESSION['email'] = $user['email'];
-        $_SESSION['rol'] = $user['rol'];
-        $_SESSION['nombre'] = $user['nombre_completo'];
-        $_SESSION['autenticado'] = true;
-        $_SESSION['login_time'] = time();
-
-        header("Location: index.php");
-        exit;
-    } else {
-        // Token inválido o vencido: limpiar la cookie
-        setcookie('forza_remember', '', time() - 3600, '/', '', true, true);
-    }
+require_once __DIR__ . '/auth_recordar.php';
+// Si ya tiene sesión de piloto activa (o se acaba de restaurar), mándalo directo a sus servicios
+if (isset($_SESSION['patrullero_id'])) {
+    header("Location: mis_servicios.php");
+    exit;
 }
 
-// Capturar mensajes de error o éxito desde la URL
-$error = $_GET['error'] ?? '';
-$success = $_GET['success'] ?? '';
+// Evita que el navegador guarde esta página en caché: si el piloto da "atrás"
+// después de salir, no debe ver el formulario con datos previos ya cargados.
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Cache-Control: post-check=0, pre-check=0', false);
+header('Pragma: no-cache');
+header('Expires: 0');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -46,7 +20,10 @@ $success = $_GET['success'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Iniciar Sesión - FORZA</title>
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>FORZA - Ingreso Piloto</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
@@ -271,16 +248,9 @@ $success = $_GET['success'] ?? '';
             accent-color: #c8161f;
         }
 
-        .forgot-link {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .forgot-link:hover {
-            color: #ff6b6b;
-            text-decoration: underline;
+        .helper-note {
+            color: var(--text-secondary);
+            font-size: 0.82rem;
         }
 
         .btn {
@@ -299,7 +269,6 @@ $success = $_GET['success'] ?? '';
         }
 
         .btn-primary { background: var(--primary-gradient); color: white; }
-        .btn-secondary { background: var(--accent-gradient); color: white; }
 
         .btn::before {
             content: '';
@@ -343,31 +312,6 @@ $success = $_GET['success'] ?? '';
             color: #f87171;
             border: 1px solid rgba(220, 38, 38, 0.35);
         }
-
-        .alert-success {
-            background: rgba(5, 150, 105, 0.12);
-            color: #34d399;
-            border: 1px solid rgba(5, 150, 105, 0.35);
-        }
-
-        .forgot-password-form { display: none; }
-        .forgot-password-form.active { display: block; animation: fadeIn 0.3s ease; }
-        .main-form.hidden { display: none; }
-
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.88rem;
-            margin-bottom: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .back-link:hover { color: #ff8080; transform: translateX(-3px); }
 
         .loading-spinner {
             display: none;
@@ -481,6 +425,12 @@ $success = $_GET['success'] ?? '';
             font-size: 0.78rem;
             font-weight: 600;
             letter-spacing: 0.4px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .visual-panel .live-badge:hover {
+            background: rgba(255, 255, 255, 0.14);
         }
 
         .visual-panel .live-dot {
@@ -505,6 +455,16 @@ $success = $_GET['success'] ?? '';
         @keyframes radarPing {
             0%   { transform: scale(0.5); opacity: 0.9; }
             100% { transform: scale(3.6); opacity: 0; }
+        }
+
+        .visual-panel .live-badge-text {
+            display: inline-block;
+            animation: badgeSwap 0.35s ease;
+        }
+
+        @keyframes badgeSwap {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* Contenedor con inclinación 3D suave que sigue al cursor */
@@ -547,6 +507,7 @@ $success = $_GET['success'] ?? '';
         }
 
         .visual-panel .stat-card {
+            position: relative;
             padding: 1rem 0.9rem;
             border-radius: 14px;
             background: rgba(255, 255, 255, 0.07);
@@ -585,6 +546,19 @@ $success = $_GET['success'] ?? '';
             font-size: 0.74rem;
             font-weight: 500;
             line-height: 1.3;
+        }
+
+        .visual-panel .stat-card .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.45);
+            transform: scale(0);
+            animation: rippleExpand 0.6s ease-out forwards;
+            pointer-events: none;
+        }
+
+        @keyframes rippleExpand {
+            to { transform: scale(1); opacity: 0; }
         }
 
         /* Íconos flotantes con parallax: capa completa, cada ícono se
@@ -649,7 +623,6 @@ $success = $_GET['success'] ?? '';
             display: flex;
             flex-direction: column;
             align-items: flex-start;
-            position: relative;
         }
 
         .visual-panel .rank-icon {
@@ -680,49 +653,8 @@ $success = $_GET['success'] ?? '';
             opacity: 1;
         }
 
-        /* Ripple de click en las tarjetas: círculo que se expande y
-           desvanece desde el punto exacto donde se hace click. */
-        .visual-panel .stat-card {
-            position: relative;
-        }
-
-        .visual-panel .stat-card .ripple {
-            position: absolute;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.45);
-            transform: scale(0);
-            animation: rippleExpand 0.6s ease-out forwards;
-            pointer-events: none;
-        }
-
-        @keyframes rippleExpand {
-            to { transform: scale(1); opacity: 0; }
-        }
-
-        /* Badge "en vivo" interactivo: al hacer click alterna a la hora
-           de la última actualización, con una pequeña animación de swap. */
-        .visual-panel .live-badge {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .visual-panel .live-badge:hover {
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .visual-panel .live-badge-text {
-            display: inline-block;
-            animation: badgeSwap 0.35s ease;
-        }
-
-        @keyframes badgeSwap {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
         /* Botón de tema: fondo sólido en degradado de marca + borde e icono
-           blancos, para que sea claramente visible sobre CUALQUIER fondo
-           (panel rojo, panel oscuro o panel claro). */
+           blancos, para que sea claramente visible sobre CUALQUIER fondo. */
         .theme-toggle-btn {
             position: fixed;
             top: calc(20px + env(safe-area-inset-top));
@@ -759,10 +691,6 @@ $success = $_GET['success'] ?? '';
         }
 
         /* ===== Responsive: móvil / tablet / desktop, vertical y horizontal ===== */
-
-        /* Tablet y móvil en general (incluye horizontal de móvil, que suele
-           tener menos de 900px de ancho): ocultamos el panel visual y el
-           formulario ocupa todo el ancho disponible. */
         @media (max-width: 900px) {
             .visual-panel { display: none; }
             .login-panel {
@@ -777,7 +705,6 @@ $success = $_GET['success'] ?? '';
             }
         }
 
-        /* Móvil angosto en vertical */
         @media (max-width: 480px) {
             .login-panel {
                 padding: 2rem 1.25rem;
@@ -788,9 +715,6 @@ $success = $_GET['success'] ?? '';
             .logo-text { font-size: 1.15rem; }
         }
 
-        /* Pantallas bajas (móvil en horizontal, ventanas cortas, tablets
-           acostadas): reducimos márgenes verticales para que todo entre sin
-           scroll excesivo y el botón de tema no estorbe el contenido. */
         @media (max-height: 560px) and (orientation: landscape) {
             .login-panel {
                 padding-top: 3.25rem;
@@ -811,16 +735,12 @@ $success = $_GET['success'] ?? '';
             }
         }
 
-        /* Pantallas muy pequeñas de alto (móviles compactos en vertical, ej.
-           iPhone SE) para evitar que el footer quede apretado */
         @media (max-height: 700px) and (orientation: portrait) and (max-width: 480px) {
             .brand-row { margin-bottom: 2rem; }
             .form-heading { margin-bottom: 1.5rem; }
             .footer-text { margin-top: 1.5rem; }
         }
 
-        /* Pantallas muy grandes (monitores anchos / escritorio 4K):
-           evitamos que el formulario quede pegado al borde izquierdo */
         @media (min-width: 1600px) {
             .login-panel { flex-basis: 540px; padding: 4rem; }
         }
@@ -841,49 +761,38 @@ $success = $_GET['success'] ?? '';
                 </div>
                 <div>
                     <div class="logo-text">FORZA</div>
-                    <div class="logo-subtitle">Secure Logistic</div>
+                    <div class="logo-subtitle">Portal del Piloto</div>
                 </div>
             </div>
 
             <div class="form-heading">
-                <h2>Bienvenido de nuevo</h2>
-                <p>Ingresa tus credenciales para acceder al sistema.</p>
+                <h2>Bienvenido, piloto</h2>
+                <p>Ingresa con tu teléfono y tu PIN para ver tus servicios.</p>
             </div>
 
-            <?php if ($error): ?>
-                <div class="alert alert-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <?php echo htmlspecialchars($error); ?>
-                </div>
-            <?php endif; ?>
+            <div class="alert alert-error" id="errorBox" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="errorText"></span>
+            </div>
 
-            <?php if ($success): ?>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    <?php echo htmlspecialchars($success); ?>
-                </div>
-            <?php endif; ?>
-
-            <!-- Formulario de Login Principal -->
-            <form method="POST" action="validar_login.php" class="main-form" id="loginForm">
+            <form id="loginForm" onsubmit="ingresar(event)" autocomplete="off">
                 <div class="form-group">
-                    <label class="form-label">Usuario o Email</label>
+                    <label class="form-label">Teléfono</label>
                     <div class="form-input-wrapper">
-                        <input type="text" class="form-input" name="usr_forza" id="usr_forza" required
-                            placeholder="Ingrese su usuario o email" autocomplete="off"
-                            autocapitalize="off" autocorrect="off" spellcheck="false">
-                        <i class="form-icon fas fa-user"></i>
+                        <input type="tel" class="form-input" name="telefono" id="telefono" required
+                            placeholder="9999-9999" inputmode="numeric" autocomplete="off" autofocus>
+                        <i class="form-icon fas fa-phone"></i>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Contraseña</label>
+                    <label class="form-label">PIN (4 dígitos)</label>
                     <div class="form-input-wrapper">
-                        <input type="password" class="form-input" name="password" id="password" required
-                            placeholder="Ingrese su contraseña">
+                        <input type="password" class="form-input" name="pin" id="pin" required
+                            placeholder="••••" inputmode="numeric" maxlength="4" pattern="\d{4}" autocomplete="new-password">
                         <i class="form-icon fas fa-lock"></i>
-                        <button type="button" class="password-toggle" onclick="togglePassword('password')" aria-label="Mostrar contraseña">
-                            <i class="fas fa-eye" id="password-eye"></i>
+                        <button type="button" class="password-toggle" onclick="togglePassword('pin')" aria-label="Mostrar PIN">
+                            <i class="fas fa-eye" id="pin-eye"></i>
                         </button>
                     </div>
                 </div>
@@ -891,39 +800,14 @@ $success = $_GET['success'] ?? '';
                 <div class="form-options">
                     <div class="checkbox-wrapper">
                         <input type="checkbox" class="form-checkbox" name="remember" id="remember">
-                        <label for="remember">Recordarme</label>
+                        <label for="remember">Recordar mi teléfono</label>
                     </div>
-                    <a href="#" class="forgot-link" onclick="showForgotPassword(); return false;">
-                        ¿Olvidó su contraseña?
-                    </a>
+                    <span class="helper-note">¿Olvidaste tu PIN? Contacta a un administrador.</span>
                 </div>
 
                 <button type="submit" class="btn btn-primary" id="loginBtn">
                     <span class="btn-text">
-                        <i class="fas fa-sign-in-alt"></i> Iniciar Sesión
-                    </span>
-                    <div class="loading-spinner"></div>
-                </button>
-            </form>
-
-            <!-- Formulario de Recuperación de Contraseña -->
-            <form method="POST" action="forgot-password.php" class="forgot-password-form" id="forgotForm">
-                <a href="#" class="back-link" onclick="showLogin(); return false;">
-                    <i class="fas fa-arrow-left"></i> Volver al login
-                </a>
-
-                <div class="form-group">
-                    <label class="form-label">Email de recuperación</label>
-                    <div class="form-input-wrapper">
-                        <input type="email" class="form-input" name="email" required
-                            placeholder="Ingrese su email registrado">
-                        <i class="form-icon fas fa-envelope"></i>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-secondary">
-                    <span class="btn-text">
-                        <i class="fas fa-paper-plane"></i> Enviar Enlace de Recuperación
+                        <i class="fas fa-sign-in-alt"></i> Ingresar
                     </span>
                     <div class="loading-spinner"></div>
                 </button>
@@ -945,14 +829,12 @@ $success = $_GET['success'] ?? '';
             <div class="glow-shape glow-1"></div>
             <div class="glow-shape glow-2"></div>
 
-            <!-- Íconos flotantes con parallax: se mueven a distinta
-                 velocidad según la posición del cursor, dando profundidad -->
             <div class="parallax-layer" id="parallaxLayer">
                 <i class="fas fa-truck-fast parallax-icon pi-1" data-depth="18"></i>
-                <i class="fas fa-shield-halved parallax-icon pi-2" data-depth="30"></i>
-                <i class="fas fa-satellite-dish parallax-icon pi-3" data-depth="12"></i>
-                <i class="fas fa-route parallax-icon pi-4" data-depth="24"></i>
-                <i class="fas fa-lock parallax-icon pi-5" data-depth="16"></i>
+                <i class="fas fa-route parallax-icon pi-2" data-depth="30"></i>
+                <i class="fas fa-gauge-high parallax-icon pi-3" data-depth="12"></i>
+                <i class="fas fa-satellite-dish parallax-icon pi-4" data-depth="24"></i>
+                <i class="fas fa-shield-halved parallax-icon pi-5" data-depth="16"></i>
             </div>
 
             <div class="live-badge" id="liveBadge">
@@ -962,8 +844,8 @@ $success = $_GET['success'] ?? '';
 
             <div class="visual-content" id="visualContent">
                 <div class="caption">
-                    <h3 id="captionTitle">Seguridad y logística <span>en tiempo real.</span></h3>
-                    <p id="captionText">Monitorea tus operaciones, custodios y unidades desde una sola plataforma.</p>
+                    <h3 id="captionTitle">Tu ruta, <span>siempre contigo.</span></h3>
+                    <p id="captionText">Consulta tus servicios asignados y repórtalos en tiempo real desde cualquier lugar.</p>
                     <div class="caption-dots" id="captionDots">
                         <button type="button" class="caption-dot active" data-i="0" aria-label="Mensaje 1"></button>
                         <button type="button" class="caption-dot" data-i="1" aria-label="Mensaje 2"></button>
@@ -991,6 +873,14 @@ $success = $_GET['success'] ?? '';
     </div>
 
     <script>
+        // Si el navegador restaura esta página desde su caché de historial (por
+        // ejemplo, al presionar "atrás" después de iniciar sesión), limpiamos el
+        // formulario para que nunca se vea el teléfono o PIN de una sesión anterior.
+        window.addEventListener('pageshow', function (event) {
+            document.getElementById('loginForm').reset();
+            document.getElementById('errorBox').style.display = 'none';
+        });
+
         // Modo oscuro / claro
         (function() {
             const currentTheme = localStorage.getItem('forza-theme');
@@ -1017,16 +907,6 @@ $success = $_GET['success'] ?? '';
             }
         }
 
-        function showForgotPassword() {
-            document.querySelector('.main-form').classList.add('hidden');
-            document.querySelector('.forgot-password-form').classList.add('active');
-        }
-
-        function showLogin() {
-            document.querySelector('.forgot-password-form').classList.remove('active');
-            document.querySelector('.main-form').classList.remove('hidden');
-        }
-
         function togglePassword(fieldId) {
             const field = document.getElementById(fieldId);
             const eye = document.getElementById(fieldId + '-eye');
@@ -1042,59 +922,85 @@ $success = $_GET['success'] ?? '';
             }
         }
 
-        // "Recordarme": guarda/recupera el usuario en este navegador.
-        // Nota: esto autocompleta el campo de usuario. Mantener la sesión
-        // iniciada entre visitas requiere lógica adicional en validar_login.php
-        // (por ejemplo, una cookie de sesión persistente del lado del servidor).
+        // "Recordarme": guarda/recupera el teléfono en este navegador (solo
+        // autocompleta el campo; la sesión persistente real la maneja
+        // auth_recordar.php del lado del servidor).
         (function() {
-            const usernameField = document.getElementById('usr_forza');
+            const telField = document.getElementById('telefono');
             const rememberBox = document.getElementById('remember');
-            const savedUser = localStorage.getItem('forza-remember-user');
+            const savedTel = localStorage.getItem('forza-piloto-remember-tel');
 
-            if (savedUser) {
-                usernameField.value = savedUser;
+            if (savedTel) {
+                telField.value = savedTel;
                 rememberBox.checked = true;
             }
 
-            // Reacciona de inmediato al marcar/desmarcar, sin esperar al submit,
-            // para que un simple refresh no vuelva a marcarla si la quitaste.
             rememberBox.addEventListener('change', function() {
                 if (rememberBox.checked) {
-                    localStorage.setItem('forza-remember-user', usernameField.value);
+                    localStorage.setItem('forza-piloto-remember-tel', telField.value);
                 } else {
-                    localStorage.removeItem('forza-remember-user');
+                    localStorage.removeItem('forza-piloto-remember-tel');
                 }
             });
         })();
 
-        document.getElementById('loginForm').addEventListener('submit', function() {
-            const btn = document.getElementById('loginBtn');
-            btn.classList.add('loading');
+        // Auto-focus: si ya hay teléfono recordado, enfoca el PIN
+        document.addEventListener('DOMContentLoaded', function() {
+            const telField = document.getElementById('telefono');
+            if (telField && telField.value) {
+                document.getElementById('pin').focus();
+            } else if (telField) {
+                telField.focus();
+            }
+        });
 
-            const usernameField = document.getElementById('usr_forza');
+        // Envío del login vía AJAX, igual que antes: sin recargar la página,
+        // con spinner en el botón y mensaje de error inline si falla.
+        async function ingresar(event) {
+            event.preventDefault();
+            const btn = document.getElementById('loginBtn');
+            const errorBox = document.getElementById('errorBox');
+            const errorText = document.getElementById('errorText');
+            errorBox.style.display = 'none';
+
+            const telefono = document.getElementById('telefono').value.trim();
+            const pin = document.getElementById('pin').value.trim();
             const rememberBox = document.getElementById('remember');
 
             if (rememberBox.checked) {
-                localStorage.setItem('forza-remember-user', usernameField.value);
+                localStorage.setItem('forza-piloto-remember-tel', telefono);
             } else {
-                localStorage.removeItem('forza-remember-user');
+                localStorage.removeItem('forza-piloto-remember-tel');
             }
-        });
 
-        document.getElementById('forgotForm').addEventListener('submit', function() {
-            const btn = this.querySelector('.btn');
             btn.classList.add('loading');
-        });
 
-        // Auto-focus: si ya hay usuario recordado, enfoca la contraseña
-        document.addEventListener('DOMContentLoaded', function() {
-            const usernameField = document.getElementById('usr_forza');
-            if (usernameField && usernameField.value) {
-                document.getElementById('password').focus();
-            } else if (usernameField) {
-                usernameField.focus();
+            try {
+                const fd = new FormData();
+                fd.append('telefono', telefono);
+                fd.append('pin', pin);
+
+                const res = await fetch('api/piloto_auth.php', {
+                    method: 'POST',
+                    body: fd
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    window.location.href = 'mis_servicios.php';
+                } else {
+                    errorText.textContent = data.message || 'Teléfono o PIN incorrecto';
+                    errorBox.style.display = 'flex';
+                    document.getElementById('pin').value = '';
+                    btn.classList.remove('loading');
+                }
+            } catch (err) {
+                errorText.textContent = 'Error de conexión. Intenta de nuevo.';
+                errorBox.style.display = 'flex';
+                document.getElementById('pin').value = '';
+                btn.classList.remove('loading');
             }
-        });
+        }
 
         // ===== Panel derecho interactivo =====
 
@@ -1398,7 +1304,6 @@ $success = $_GET['success'] ?? '';
                     text.textContent = 'Sistema en línea';
                 }
                 text.style.animation = 'none';
-                // Forzar reflow para reiniciar la animación
                 void text.offsetWidth;
                 text.style.animation = '';
             });
@@ -1443,16 +1348,16 @@ $success = $_GET['success'] ?? '';
 
             const messages = [
                 {
-                    title: 'Seguridad y logística <span>en tiempo real.</span>',
-                    text: 'Monitorea tus operaciones, custodios y unidades desde una sola plataforma.'
+                    title: 'Tu ruta, <span>siempre contigo.</span>',
+                    text: 'Consulta tus servicios asignados y repórtalos en tiempo real desde cualquier lugar.'
                 },
                 {
                     title: 'La fuerza detrás <span>de cada envío.</span>',
-                    text: 'Tecnología y experiencia al servicio de la seguridad de tu carga.'
+                    text: 'Gracias a tu trabajo, la carga llega segura a su destino.'
                 },
                 {
-                    title: 'Cobertura en <span>toda la región.</span>',
-                    text: 'Presencia y operaciones activas en Centroamérica, con Honduras como base.'
+                    title: 'Reporta tu <span>kilometraje al instante.</span>',
+                    text: 'Mantén tu vehículo al día y evita alertas de mantenimiento.'
                 }
             ];
 
@@ -1464,7 +1369,6 @@ $success = $_GET['success'] ?? '';
                 titleEl.innerHTML = messages[i].title;
                 textEl.textContent = messages[i].text;
 
-                // Reinicia la animación de aparición
                 titleEl.style.animation = 'none';
                 textEl.style.animation = 'none';
                 void titleEl.offsetWidth;
@@ -1515,18 +1419,6 @@ $success = $_GET['success'] ?? '';
                 });
             });
         })();
-
-        // Limpiar URL de parámetros después de 3 segundos
-        window.addEventListener('load', function() {
-            if (window.location.search.includes('success=') || window.location.search.includes('error=')) {
-                setTimeout(function() {
-                    const url = new URL(window.location);
-                    url.searchParams.delete('success');
-                    url.searchParams.delete('error');
-                    window.history.replaceState({}, document.title, url.pathname);
-                }, 3000);
-            }
-        });
     </script>
 </body>
 

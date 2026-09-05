@@ -11,7 +11,7 @@ if (!isset($_SESSION['usuario_id'])) {
 require_once '../conexion/db.php';
 
 try {
-    $sql = "SELECT id, nombre, telefono, cargo, estado FROM custodios WHERE estado = 'activo' ORDER BY nombre ASC";
+    $sql = "SELECT id, nombre, telefono, cargo, zona, estado FROM custodios WHERE estado = 'activo' ORDER BY nombre ASC";
     $stmt = $conn->prepare($sql);
     $stmt->execute();
     $custodios = $stmt->fetchAll(PDO::FETCH_ASSOC);

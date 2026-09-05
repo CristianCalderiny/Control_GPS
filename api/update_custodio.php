@@ -21,15 +21,16 @@ try {
     $nombre = $_POST['nombre'] ?? '';
     $telefono = $_POST['telefono'] ?? '';
     $cargo = $_POST['cargo'] ?? '';
+    $zona = $_POST['zona'] ?? '';
 
     if (empty($id) || empty($nombre) || empty($telefono) || empty($cargo)) {
         echo json_encode(['success' => false, 'message' => 'Faltan campos requeridos']);
         exit;
     }
 
-    $sql = "UPDATE custodios SET nombre = ?, telefono = ?, cargo = ?, updated_at = NOW() WHERE id = ?";
+    $sql = "UPDATE custodios SET nombre = ?, telefono = ?, cargo = ?, zona = ?, updated_at = NOW() WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    $stmt->execute([$nombre, $telefono, $cargo, $id]);
+    $stmt->execute([$nombre, $telefono, $cargo, $zona ?: null, $id]);
 
     echo json_encode(['success' => true, 'message' => 'Custodio actualizado correctamente']);
 } catch (PDOException $e) {

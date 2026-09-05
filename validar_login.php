@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$username = trim($_POST['username'] ?? '');
+$username = trim($_POST['usr_forza'] ?? '');
 $password = $_POST['password'] ?? '';
 $remember = isset($_POST['remember']);
 
@@ -49,8 +49,8 @@ try {
     $_SESSION['nombre'] = $user['nombre_completo'];
     $_SESSION['autenticado'] = true;
     $_SESSION['login_time'] = time();
-    
-    // Guardar en localStorage para JavaScript también
+
+    // Datos básicos del usuario, legibles por JS del lado del cliente (no sensibles)
     setcookie('usuario_logueado', json_encode([
         'id' => $user['id'],
         'usuario' => $user['usuario'],
@@ -58,18 +58,40 @@ try {
         'rol' => $user['rol'],
         'nombre' => $user['nombre_completo']
     ]), time() + (86400 * 30), '/');
-    
+
     // Actualizar último acceso
     $updateSql = "UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = :id";
     $updateStmt = $conn->prepare($updateSql);
     $updateStmt->execute([':id' => $user['id']]);
-    
-    // Si marcó "Recordarme", crear cookie segura
+
     if ($remember) {
+        // Generar token, guardar solo su hash en la BD y mandar el token
+        // en crudo por cookie httpOnly. Así la BD nunca guarda el valor
+        // que viaja al navegador.
         $token = bin2hex(random_bytes(32));
-        setcookie('forza_remember', $token, time() + (86400 * 30), '/', '', true, true); // 30 días
+        $tokenHash = hash('sha256', $token);
+        $expira = date('Y-m-d H:i:s', time() + (86400 * 30)); // 30 días
+
+        $tokenSql = "UPDATE usuarios SET remember_token = :token, remember_expira = :expira WHERE id = :id";
+        $tokenStmt = $conn->prepare($tokenSql);
+        $tokenStmt->execute([
+            ':token' => $tokenHash,
+            ':expira' => $expira,
+            ':id' => $user['id']
+        ]);
+
+        setcookie('forza_remember', $token, time() + (86400 * 30), '/', '', true, true);
+    } else {
+        // Si no marcó recordarme, invalidar cualquier token previo de este usuario
+        $clearSql = "UPDATE usuarios SET remember_token = NULL, remember_expira = NULL WHERE id = :id";
+        $clearStmt = $conn->prepare($clearSql);
+        $clearStmt->execute([':id' => $user['id']]);
+
+        if (isset($_COOKIE['forza_remember'])) {
+            setcookie('forza_remember', '', time() - 3600, '/', '', true, true);
+        }
     }
-    
+
     // Redirigir al dashboard
     header("Location: index.php");
     exit;
@@ -80,4 +102,3 @@ try {
     header("Location: login.php?error=" . urlencode("Error del sistema. Intente nuevamente."));
     exit;
 }
-?>
